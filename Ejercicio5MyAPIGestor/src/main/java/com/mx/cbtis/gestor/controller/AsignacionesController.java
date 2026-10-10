@@ -38,7 +38,7 @@ public class AsignacionesController {
 	public int addAsignacion(@RequestBody Asignaciones asignacion) {
 		
 		int flag = 0;
-		if(!asignacion.equals(null)) {
+		if(asignacion != null) {
 			
 			asignacionestable.save(asignacion);
 			flag = 1;
@@ -51,7 +51,7 @@ public class AsignacionesController {
 	public int updateAsignacion(@RequestBody Asignaciones asignacion) {
 		
 		int flag = 0;
-		if(!asignacion.equals(null)) {
+		if(asignacion != null) {
 			asignacionestable.save(asignacion);
 			flag = 1;
 		}
@@ -63,7 +63,7 @@ public class AsignacionesController {
 	public int deleteAsignacion(@RequestBody Asignaciones asignacion) {
 		
 		int flag = 0;
-		if(!asignacion.equals(null)) {
+		if(asignacion != null) {
 			asignacionestable.delete(asignacion);
 			flag = 1;
 		}

@@ -1,0 +1,63 @@
+======================================================================
+REPORTE DE COBERTURA DE CÓDIGO (JACOCO 0.8.11)
+Proyecto: Ejercicio5MyAPIGestor
+Fecha de ejecución: 09/10/2026
+Herramienta: JaCoCo Maven Plugin 0.8.11
+======================================================================
+
+1. RESUMEN GLOBAL:
+----------------------------------------------------------------------
+- Cobertura de Instrucciones: 58.76% (436 de 742 cubiertas, 306 perdidas)
+- Cobertura de Ramas (Branches): 28.57% (12 de 42 cubiertas, 30 perdidas)
+- Cobertura de Líneas: 60.00% (162 de 270 cubiertas, 108 perdidas)
+- Cobertura de Métodos: 65.05% (67 de 103 cubiertos, 36 perdidos)
+- Clases analizadas: 11 (100% de clases encontradas)
+
+2. COBERTURA POR PAQUETE:
+----------------------------------------------------------------------
+a) com.mx.cbtis.gestor.controller
+   - Instrucciones: 50.48% (209 cubiertas, 205 perdidas, total 414)
+   - Ramas: 28.57% (12 cubiertas, 30 perdidas, total 42)
+   - Líneas: 49.62% (65 cubiertas, 66 perdidas, total 131)
+   - Métodos: 54.55% (18 cubiertos, 15 perdidos, total 33)
+
+   Detalle de clases en com.mx.cbtis.gestor.controller:
+   * UsuarioController:
+     - Instrucciones: 100.0% (98 cubiertas, 0 perdidas)
+     - Ramas: 70.0% (7 cubiertas, 3 perdidas)
+   * ProyectosController:
+     - Instrucciones: 82.67% (62 cubiertas, 13 perdidas)
+     - Ramas: 37.5% (3 cubiertas, 5 perdidas)
+   * TareasController:
+     - Instrucciones: 51.81% (43 cubiertas, 40 perdidas)
+     - Ramas: 25.0% (2 cubiertas, 6 perdidas)
+   * AsignacionesController:
+     - Instrucciones: 4.00% (3 cubiertas, 72 perdidas)
+     - Ramas: 0.0% (0 cubiertas, 8 perdidas)
+   * ComentariosController:
+     - Instrucciones: 3.61% (3 cubiertas, 80 perdidas)
+     - Ramas: 0.0% (0 cubiertas, 8 perdidas)
+
+b) com.mx.cbtis.gestor.modelo
+   - Instrucciones: 70.00% (224 cubiertas, 96 perdidas, total 320)
+   - Ramas: N/A (sin ramificaciones lógicas en entidades)
+   - Líneas: 70.59% (96 cubiertas, 40 perdidas, total 136)
+   - Métodos: 70.59% (48 cubiertos, 20 perdidos, total 68)
+
+   Detalle de clases en com.mx.cbtis.gestor.modelo:
+   * Usuario: 100.0% instrucciones (66 cubiertas, 0 perdidas)
+   * Proyectos: 100.0% instrucciones (76 cubiertas, 0 perdidas)
+   * Tareas: 100.0% instrucciones (76 cubiertas, 0 perdidas)
+   * Asignaciones: 6.52% instrucciones (3 cubiertas, 43 perdidas)
+   * Comentarios: 5.36% instrucciones (3 cubiertas, 53 perdidas)
+
+c) com.mx.cbtis.gestor
+   - Instrucciones: 37.50% (3 cubiertas, 5 perdidas, total 8)
+   - Ramas: N/A
+   - Líneas: 33.33% (1 cubierta, 2 perdidas, total 3)
+   - Métodos: 50.00% (1 cubierto, 1 perdido, total 2)
+   * Ejercicio5MyApiGestorApplication: 37.50% instrucciones
+
+======================================================================
+REPORTE HTML DISPONIBLE EN: target/site/jacoco/index.html
+======================================================================
