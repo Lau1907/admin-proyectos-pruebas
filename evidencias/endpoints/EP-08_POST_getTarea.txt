@@ -1,0 +1,7 @@
+ID: EP-08_POST_getTarea
+Peticion: POST /getTarea
+Cuerpo enviado: {"id_proyecto":204}
+Codigo HTTP esperado: 200
+Codigo HTTP obtenido: 200
+Resultado: COINCIDE
+Respuesta: [{"id_tarea":205,"nombre":"Tarea Prueba P1","descripcion":"Tarea de prueba P1","fecha_vencimiento":"2026-10-15","lista":"pendiente","estado":"danger","id_proyecto":204}]

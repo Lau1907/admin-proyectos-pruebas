@@ -1,0 +1,7 @@
+ID: EP-09_POST_addUsuario_datos_vacios
+Peticion: POST /addUsuario
+Cuerpo enviado: {"nombre":"Sin Correo P1","correo_electronico":"","contrasena":"","rol":"Estudiante","imagen_usuario":"#000000"}
+Codigo HTTP esperado: 400
+Codigo HTTP obtenido: 400
+Resultado: COINCIDE
+Respuesta: {"timestamp":"2026-10-14T22:38:11.256+00:00","status":400,"error":"Bad Request","path":"/addUsuario"}

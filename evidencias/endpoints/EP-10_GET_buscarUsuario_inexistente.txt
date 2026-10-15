@@ -1,0 +1,7 @@
+ID: EP-10_GET_buscarUsuario_inexistente
+Peticion: GET /buscarUsuario?id=99999
+Cuerpo enviado: 
+Codigo HTTP esperado: 404
+Codigo HTTP obtenido: 404
+Resultado: COINCIDE
+Respuesta: 

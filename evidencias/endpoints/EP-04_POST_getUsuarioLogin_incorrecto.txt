@@ -1,0 +1,7 @@
+ID: EP-04_POST_getUsuarioLogin_incorrecto
+Peticion: POST /getUsuarioLogin
+Cuerpo enviado: {"correo_electronico":"prueba.p1@example.com","contrasena":"incorrecta"}
+Codigo HTTP esperado: 200
+Codigo HTTP obtenido: 200
+Resultado: COINCIDE
+Respuesta: {"id_usuario":null,"nombre":"000","correo_electronico":null,"contrasena":null,"rol":null,"imagen_usuario":null}

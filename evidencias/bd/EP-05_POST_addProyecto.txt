@@ -1,0 +1,9 @@
+ID: EP-05_POST_addProyecto
+--- ANTES ---
+(sin registros)
+--- DESPUES ---
++-------------+--------------------+-----------------+
+| id_proyecto | nombre             | estado_proyecto |
++-------------+--------------------+-----------------+
+|         204 | Proyecto Prueba P1 | En proceso      |
++-------------+--------------------+-----------------+
