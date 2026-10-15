@@ -1,0 +1,9 @@
+ID: EP-01_POST_addUsuario
+--- ANTES ---
+(sin registros)
+--- DESPUES ---
++------------+-------------------+-----------------------+------------+
+| id_usuario | nombre            | correo_electronico    | rol        |
++------------+-------------------+-----------------------+------------+
+|        203 | Usuario Prueba P1 | prueba.p1@example.com | Estudiante |
++------------+-------------------+-----------------------+------------+

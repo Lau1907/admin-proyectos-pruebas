@@ -1,0 +1,9 @@
+ID: EP-12_DELETE_deleteUsuario
+--- ANTES ---
++------------+-------------------+-----------------------+------------+
+| id_usuario | nombre            | correo_electronico    | rol        |
++------------+-------------------+-----------------------+------------+
+|        203 | Usuario Prueba P1 | prueba.p1@example.com | Estudiante |
++------------+-------------------+-----------------------+------------+
+--- DESPUES ---
+(sin registros)

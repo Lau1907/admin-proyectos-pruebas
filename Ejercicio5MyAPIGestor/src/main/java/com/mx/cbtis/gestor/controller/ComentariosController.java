@@ -44,7 +44,7 @@ public class ComentariosController {
 	public int addComentario(@RequestBody Comentarios comentario) {
 		
 		int flag = 0;
-		if(!comentario.equals(null)) {
+		if(comentario != null) {
 			comentariostable.save(comentario);
 			flag = 1;
 		}
@@ -56,7 +56,7 @@ public class ComentariosController {
 	public int updateComentario(@RequestBody Comentarios comentario) {
 		
 		int flag = 0;
-		if(!comentario.equals(null)) {
+		if(comentario != null) {
 			comentariostable.save(comentario);
 			flag = 1;
 		}
@@ -68,7 +68,7 @@ public class ComentariosController {
 	public int deleteComentario(@RequestBody Comentarios comentario) {
 		
 		int flag = 0;
-		if(!comentario.equals(null)) {
+		if(comentario != null) {
 			comentariostable.delete(comentario);
 			flag = 1;
 		}

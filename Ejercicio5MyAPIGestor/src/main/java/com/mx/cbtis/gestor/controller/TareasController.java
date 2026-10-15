@@ -44,7 +44,7 @@ public class TareasController {
 	public int addTareas(@RequestBody Tareas tareas) {
 		
 		int flag = 0;
-		if(!tareas.equals(null)) {
+		if(tareas != null) {
 			tareastable.save(tareas);
 			flag = 1;
 		}
@@ -56,7 +56,7 @@ public class TareasController {
 	public int updateTareas(@RequestBody Tareas tareas) {
 		
 		int flag = 0;
-		if(!tareas.equals(null)) {
+		if(tareas != null) {
 			tareastable.save(tareas);
 			flag = 1;
 		}
@@ -68,7 +68,7 @@ public class TareasController {
 	public int deleteTareas(@RequestBody Tareas tareas) {
 		
 		int flag = 0;
-		if(!tareas.equals(null)) {
+		if(tareas != null) {
 			tareastable.delete(tareas);
 			flag = 1;
 		}

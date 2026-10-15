@@ -1,0 +1,7 @@
+ID: EP-12_DELETE_deleteUsuario
+Peticion: DELETE /deleteUsuario
+Cuerpo enviado: {"id_usuario":203,"nombre":"Usuario Prueba P1","correo_electronico":"prueba.p1@example.com","contrasena":"prueba123","rol":"Estudiante","imagen_usuario":"#FFFFFF"}
+Codigo HTTP esperado: 200
+Codigo HTTP obtenido: 200
+Resultado: COINCIDE
+Respuesta: 1

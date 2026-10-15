@@ -1,0 +1,7 @@
+ID: EP-11_POST_addUsuario_json_malformado
+Peticion: POST /addUsuario
+Cuerpo enviado: {esto no es json
+Codigo HTTP esperado: 400
+Codigo HTTP obtenido: 400
+Resultado: COINCIDE
+Respuesta: {"timestamp":"2026-10-14T22:38:11.484+00:00","status":400,"error":"Bad Request","path":"/addUsuario"}

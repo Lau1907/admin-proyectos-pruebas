@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import javax.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,22 +43,18 @@ public class UsuarioController {
 	}
 	
 	@GetMapping("/buscarUsuario")
-	public Usuario getUsuario(@RequestParam int id) {
-		
-		Usuario buscar = new Usuario();
+	public ResponseEntity<Usuario> getUsuario(@RequestParam int id) {
 		Optional<Usuario> usuario = usuariotable.findById(id);
-		if(usuario.isPresent())
-		{
-			buscar = usuario.get();
+		if(usuario.isPresent()) {
+			return ResponseEntity.ok(usuario.get());
 		}
-		
-		return buscar;
+		return ResponseEntity.notFound().build();
 	}
 	
 	@PostMapping("/addUsuario")
-	public int addUsuario(@RequestBody Usuario usuario) {
+	public int addUsuario(@Valid @RequestBody Usuario usuario) {
 		int flag = 0;
-		if(!usuario.equals(null)) {
+		if(usuario != null) {
 			usuariotable.save(usuario);
 			flag = 1;
 		}
@@ -66,7 +65,7 @@ public class UsuarioController {
 	@PostMapping("/updateUsuario")
 	public int updateUsuario(@RequestBody Usuario usuario) {
 		int flag = 0;
-		if(!usuario.equals(null)) {
+		if(usuario != null) {
 			usuariotable.save(usuario);
 			flag = 1;
 		}
@@ -77,7 +76,7 @@ public class UsuarioController {
 	@DeleteMapping("/deleteUsuario")
 	public int deleteUsuario(@RequestBody Usuario usuario) {
 		int flag = 0;
-		if(!usuario.equals(null)) {
+		if(usuario != null) {
 			usuariotable.delete(usuario);
 			flag = 1;
 		}

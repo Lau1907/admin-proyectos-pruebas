@@ -49,7 +49,7 @@ public class ProyectosController {
 	public int addProyecto(@RequestBody Proyectos proyecto) {
 		
 		int flag = 0;
-		if(!proyecto.equals(null)) {
+		if(proyecto != null) {
 			
 			proyectostable.save(proyecto);
 			flag = 1;
@@ -62,7 +62,7 @@ public class ProyectosController {
 	public int updateProyecto(@RequestBody Proyectos proyecto) {
 		
 		int flag = 0;
-		if(!proyecto.equals(null)) {
+		if(proyecto != null) {
 			proyectostable.save(proyecto);
 			flag = 1;
 		}
@@ -74,7 +74,7 @@ public class ProyectosController {
 	public int deleteProyecto(@RequestBody Proyectos proyecto) {
 		
 		int flag = 0;
-		if(!proyecto.equals(null)) {
+		if(proyecto != null) {
 			proyectostable.delete(proyecto);
 			flag = 1;
 		}

@@ -4,6 +4,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.validation.constraints.NotBlank;
 
 @Entity
 public class Usuario {
@@ -12,7 +13,9 @@ public class Usuario {
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private Integer id_usuario;
 	private String nombre;
+	@NotBlank
 	private String correo_electronico;
+	@NotBlank
 	private String contrasena;
 	private String rol;
 	private String imagen_usuario;

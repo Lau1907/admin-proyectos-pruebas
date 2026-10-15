@@ -1,0 +1,7 @@
+ID: EP-06_GET_buscarProyecto
+Peticion: GET /buscarProyecto?id_proyecto=204
+Cuerpo enviado: 
+Codigo HTTP esperado: 200
+Codigo HTTP obtenido: 200
+Resultado: COINCIDE
+Respuesta: {"id_proyecto":204,"nombre":"Proyecto Prueba P1","descripcion":"Proyecto de prueba P1","fecha_inicio":"2026-10-01","fecha_finalizacion":"2026-10-31","estado_proyecto":"En proceso","fondo":"#FFFFFF"}
