@@ -36,6 +36,9 @@ public class UsuarioControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private UsuarioController usuarioController;
+
     @MockBean
     private UsuarioRepository usuariotable;
 
@@ -205,5 +208,27 @@ public class UsuarioControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(usuariotable, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("UT-E12 Invocaciones directas con null -> retorna 0 (Fracaso controlado)")
+    void testUtE12_invocacionesConNull() {
+        org.junit.jupiter.api.Assertions.assertEquals(0, usuarioController.addUsuario(null));
+        org.junit.jupiter.api.Assertions.assertEquals(0, usuarioController.updateUsuario(null));
+        org.junit.jupiter.api.Assertions.assertEquals(0, usuarioController.deleteUsuario(null));
+    }
+
+    @Test
+    @DisplayName("UT-E13 getUsuarioLogin con contraseña nula en request -> retorna 000")
+    void testUtE13_loginPasswordNula() {
+        Usuario dbUser = new Usuario(1, "Ana", "ana@correo.com", "$2a$10$hash", "User", "#000");
+        when(usuariotable.findByCorreoElectronico("ana@correo.com")).thenReturn(Optional.of(dbUser));
+
+        Usuario req = new Usuario();
+        req.setCorreo_electronico("ana@correo.com");
+        req.setContrasena(null);
+
+        Usuario res = usuarioController.getUsuarioLogin(req);
+        org.junit.jupiter.api.Assertions.assertEquals("000", res.getNombre());
     }
 }
