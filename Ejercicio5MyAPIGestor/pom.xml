@@ -19,6 +19,9 @@
 		<byte-buddy.version>1.14.12</byte-buddy.version>
 		<!-- valor por defecto para que @{argLine} de surefire siempre exista -->
 		<argLine></argLine>
+		<!-- Excluir carpetas target pero NO excluir el codigo fuente src/ -->
+		<sonar.exclusions>**/target/**</sonar.exclusions>
+		<sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -28,6 +31,11 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-crypto</artifactId>
 		</dependency>
 
 		<dependency>
@@ -61,6 +69,12 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.12</version>
+				<configuration>
+					<!-- Excluye SOLO la clase main ya que unicamente arranca Spring Boot con SpringApplication.run() y no contiene logica evaluable -->
+					<excludes>
+						<exclude>com/mx/cbtis/gestor/Ejercicio5MyApiGestorApplication.*</exclude>
+					</excludes>
+				</configuration>
 				<executions>
 					<execution>
 						<id>prepare-agent</id>
@@ -70,7 +84,7 @@
 					</execution>
 					<execution>
 						<id>report</id>
-						<phase>test</phase>
+						<phase>verify</phase>
 						<goals>
 							<goal>report</goal>
 						</goals>

@@ -68,12 +68,15 @@ public class UsuarioControllerTest {
     @Test
     @DisplayName("UT-E03 POST /getUsuarioLogin credenciales correctas -> usuario con su rol")
     void testUtE03_loginCorrecto() throws Exception {
+        org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder encoder = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+        String hash = encoder.encode("0722");
+
         Usuario loginReq = new Usuario();
         loginReq.setCorreo_electronico("ana22533@cbtis75.edu.mx");
         loginReq.setContrasena("0722");
 
-        Usuario userFound = new Usuario(131, "Ana Paola Ramírez Vázquez", "ana22533@cbtis75.edu.mx", "0722", "Estudiante", "#70FAB7");
-        when(usuariotable.findByCorreoPass("ana22533@cbtis75.edu.mx", "0722")).thenReturn(Optional.of(userFound));
+        Usuario userFound = new Usuario(131, "Ana Paola Ramírez Vázquez", "ana22533@cbtis75.edu.mx", hash, "Estudiante", "#70FAB7");
+        when(usuariotable.findByCorreoElectronico("ana22533@cbtis75.edu.mx")).thenReturn(Optional.of(userFound));
 
         mockMvc.perform(post("/getUsuarioLogin")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -84,13 +87,33 @@ public class UsuarioControllerTest {
     }
 
     @Test
-    @DisplayName("UT-E04 POST /getUsuarioLogin credenciales incorrectas -> nombre 000")
-    void testUtE04_loginIncorrecto() throws Exception {
+    @DisplayName("UT-E04 POST /getUsuarioLogin credenciales incorrectas (usuario no existe) -> nombre 000")
+    void testUtE04_loginIncorrectoUsuarioNoExiste() throws Exception {
         Usuario loginReq = new Usuario();
-        loginReq.setCorreo_electronico("ana22533@cbtis75.edu.mx");
+        loginReq.setCorreo_electronico("noexiste@cbtis75.edu.mx");
         loginReq.setContrasena("wrong");
 
-        when(usuariotable.findByCorreoPass("ana22533@cbtis75.edu.mx", "wrong")).thenReturn(Optional.empty());
+        when(usuariotable.findByCorreoElectronico("noexiste@cbtis75.edu.mx")).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/getUsuarioLogin")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginReq)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("000"));
+    }
+
+    @Test
+    @DisplayName("UT-E04b POST /getUsuarioLogin credenciales incorrectas (password erróneo) -> nombre 000")
+    void testUtE04b_loginIncorrectoPasswordInvalido() throws Exception {
+        org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder encoder = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+        String hash = encoder.encode("passwordSeguro123");
+
+        Usuario loginReq = new Usuario();
+        loginReq.setCorreo_electronico("ana22533@cbtis75.edu.mx");
+        loginReq.setContrasena("passwordErroneo");
+
+        Usuario userFound = new Usuario(131, "Ana Paola Ramírez Vázquez", "ana22533@cbtis75.edu.mx", hash, "Estudiante", "#70FAB7");
+        when(usuariotable.findByCorreoElectronico("ana22533@cbtis75.edu.mx")).thenReturn(Optional.of(userFound));
 
         mockMvc.perform(post("/getUsuarioLogin")
                 .contentType(MediaType.APPLICATION_JSON)
