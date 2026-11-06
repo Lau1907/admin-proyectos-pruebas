@@ -1,0 +1,98 @@
+// =============================================================================
+// CI/CD Pipeline Declarativo para Backend: Ejercicio5MyAPIGestor
+// Archivo: ci/Jenkinsfile.backend
+// Tecnología: Java 21, Spring Boot 2.7.18, Maven 3.9+, JaCoCo, JUnit 5
+// =============================================================================
+
+// NOTA IMPORTANTE DE CONFIGURACIÓN EN JENKINS:
+// Los nombres definidos en la sección 'tools' ('JDK21' y 'Maven3') DEBEN COINCIDIR
+// exactamente con los nombres configurados en Jenkins en:
+// "Administrar Jenkins" -> "Tools" (o "Global Tool Configuration") ->
+//   * JDK installations: Nombre = "JDK21"
+//   * Maven installations: Nombre = "Maven3"
+
+pipeline {
+    agent any
+
+    tools {
+        jdk 'JDK21'
+        maven 'Maven3'
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '15'))
+        disableConcurrentBuilds()
+        timeout(time: 20, unit: 'MINUTES')
+        timestamps()
+    }
+
+    stages {
+        stage('Validar Entorno') {
+            steps {
+                echo '=== Comprobando versiones de Java y Maven en el agente ==='
+                sh 'java -version'
+                sh 'mvn -version'
+            }
+        }
+
+        stage('Compilar Backend') {
+            steps {
+                dir('Ejercicio5MyAPIGestor') {
+                    echo '=== Compilando el microservicio backend con Java 21 ==='
+                    sh 'mvn -B clean compile'
+                }
+            }
+        }
+
+        stage('Pruebas Unitarias y Cobertura') {
+            steps {
+                dir('Ejercicio5MyAPIGestor') {
+                    echo '=== Ejecutando pruebas JUnit 5 y generando reporte JaCoCo ==='
+                    // Utiliza H2 en memoria configurado en src/test/resources/application.properties
+                    sh 'mvn -B verify'
+                }
+            }
+        }
+
+        stage('Publicar Reportes') {
+            steps {
+                dir('Ejercicio5MyAPIGestor') {
+                    echo '=== Publicando resultados de pruebas JUnit y cobertura JaCoCo ==='
+                    junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: false
+                    
+                    // Publicar reporte JaCoCo si el plugin de Jenkins está instalado
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                        jacoco(
+                            execFile: 'target/jacoco.exec',
+                            classPattern: 'target/classes',
+                            sourcePattern: 'src/main/java',
+                            exclusionPattern: '**/Ejercicio5MyApiGestorApplication.*'
+                        )
+                    }
+
+                    // Archivar reporte HTML y XML de JaCoCo como artefactos de build
+                    archiveArtifacts artifacts: 'target/site/jacoco/**', fingerprint: true, allowEmptyArchive: true
+                }
+            }
+        }
+
+        stage('Empaquetar Artefacto') {
+            steps {
+                dir('Ejercicio5MyAPIGestor') {
+                    echo '=== Generando JAR empaquetado para distribución (skipTests) ==='
+                    sh 'mvn -B -DskipTests package'
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo ' Pipeline Backend finalizado con ÉXITO.'
+        }
+        failure {
+            echo '❌ Pipeline Backend falló. Revise los registros de compilación y pruebas.'
+        }
+    }
+}

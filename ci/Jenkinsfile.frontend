@@ -1,0 +1,97 @@
+// =============================================================================
+// CI/CD Pipeline Declarativo para Frontend: Ejercicio5Cliente
+// Archivo: ci/Jenkinsfile.frontend
+// Tecnología: Java 21, Spring Boot 3.2.5, Thymeleaf, Bootstrap 5.3.3, Maven, JaCoCo
+// =============================================================================
+
+// NOTA IMPORTANTE DE CONFIGURACIÓN EN JENKINS:
+// Los nombres definidos en la sección 'tools' ('JDK21' y 'Maven3') DEBEN COINCIDIR
+// exactamente con los nombres configurados en Jenkins en:
+// "Administrar Jenkins" -> "Tools" (o "Global Tool Configuration") ->
+//   * JDK installations: Nombre = "JDK21"
+//   * Maven installations: Nombre = "Maven3"
+
+pipeline {
+    agent any
+
+    tools {
+        jdk 'JDK21'
+        maven 'Maven3'
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '15'))
+        disableConcurrentBuilds()
+        timeout(time: 20, unit: 'MINUTES')
+        timestamps()
+    }
+
+    stages {
+        stage('Validar Entorno') {
+            steps {
+                echo '=== Comprobando versiones de Java y Maven en el agente ==='
+                sh 'java -version'
+                sh 'mvn -version'
+            }
+        }
+
+        stage('Compilar Frontend') {
+            steps {
+                dir('Ejercicio5Cliente') {
+                    echo '=== Compilando el microservicio frontend MVC con Java 21 ==='
+                    sh 'mvn -B clean compile'
+                }
+            }
+        }
+
+        stage('Pruebas Unitarias y Cobertura') {
+            steps {
+                dir('Ejercicio5Cliente') {
+                    echo '=== Ejecutando pruebas JUnit 5 con mocks de RestTemplate y reporte JaCoCo ==='
+                    sh 'mvn -B verify'
+                }
+            }
+        }
+
+        stage('Publicar Reportes') {
+            steps {
+                dir('Ejercicio5Cliente') {
+                    echo '=== Publicando resultados de pruebas JUnit y cobertura JaCoCo ==='
+                    junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: false
+
+                    // Publicar reporte JaCoCo si el plugin de Jenkins está instalado
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                        jacoco(
+                            execFile: 'target/jacoco.exec',
+                            classPattern: 'target/classes',
+                            sourcePattern: 'src/main/java',
+                            exclusionPattern: '**/Ejercicio5ClienteApplication.*'
+                        )
+                    }
+
+                    // Archivar reporte HTML y XML de JaCoCo como artefactos de build
+                    archiveArtifacts artifacts: 'target/site/jacoco/**', fingerprint: true, allowEmptyArchive: true
+                }
+            }
+        }
+
+        stage('Empaquetar Artefacto') {
+            steps {
+                dir('Ejercicio5Cliente') {
+                    echo '=== Generando JAR empaquetado para distribución (skipTests) ==='
+                    sh 'mvn -B -DskipTests package'
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo ' Pipeline Frontend finalizado con ÉXITO.'
+        }
+        failure {
+            echo '❌ Pipeline Frontend falló. Revise los registros de compilación y pruebas.'
+        }
+    }
+}
