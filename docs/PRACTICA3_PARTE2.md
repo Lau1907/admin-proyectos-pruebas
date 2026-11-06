@@ -172,6 +172,19 @@
 
 Los tres pipelines se encuentran versionados en el directorio `ci/` y utilizan la directiva declarativa `tools { jdk 'JDK21'; maven 'Maven3' }`.
 
+> **Compatibilidad Multiplataforma (Windows y Linux):**  
+> Para evitar errores de ejecución en agentes Windows que operan como servicio (`Cannot run program "sh": CreateProcess error=2`), los tres pipelines incorporan al inicio el helper:
+> ```groovy
+> def run(String cmd) {
+>     if (isUnix()) {
+>         sh cmd
+>     } else {
+>         bat cmd
+>     }
+> }
+> ```
+> Todos los comandos son ejecutados mediante `run(cmd)`, empleando sintaxis compatible con `cmd.exe` de Windows (`\`, redirecciones `<`, `.venv\Scripts\` para `sqlfluff` y `retry/sleep` de Jenkins en lugar de bucles bash).
+
 > **Requisito Global en Jenkins:** En la administración de Jenkins (*Manage Jenkins $\rightarrow$ Tools*), deben registrarse con esos nombres exactos:
 > - **JDK installations:** Nombre = `JDK21`, apuntando a la ruta de instalación de OpenJDK 21.
 > - **Maven installations:** Nombre = `Maven3`, versión Maven 3.9+.
@@ -316,3 +329,4 @@ Esta sección sirve como lista de verificación práctica de las capturas de pan
   - Pipeline Database & Quality (`Jenkinsfile.database`)
 - [ ] **8. Artefactos y Reportes en Jenkins:** Captura dentro de la ejecución del job de Jenkins mostrando los artefactos archivados: `validaciones_resultado.txt`, reporte de pruebas JUnit y tendencia de cobertura JaCoCo.
 - [ ] **9. SonarQube Dashboard (si aplica en su servidor):** Captura de pantalla de SonarQube con el proyecto analizado, mostrando **Quality Gate Passed**, 0 vulnerabilidades críticas de autenticación y la cobertura de código reportada por JaCoCo.
+

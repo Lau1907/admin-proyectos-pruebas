@@ -2,7 +2,17 @@
 // CI/CD Pipeline Declarativo para Frontend: Ejercicio5Cliente
 // Archivo: ci/Jenkinsfile.frontend
 // Tecnología: Java 21, Spring Boot 3.2.5, Thymeleaf, Bootstrap 5.3.3, Maven, JaCoCo
+// Compatible con agentes Windows (bat) y Linux/Unix (sh)
 // =============================================================================
+
+// Helper para compatibilidad multiplataforma entre Linux (sh) y Windows (bat)
+def run(String cmd) {
+    if (isUnix()) {
+        sh cmd
+    } else {
+        bat cmd
+    }
+}
 
 // NOTA IMPORTANTE DE CONFIGURACIÓN EN JENKINS:
 // Los nombres definidos en la sección 'tools' ('JDK21' y 'Maven3') DEBEN COINCIDIR
@@ -30,8 +40,8 @@ pipeline {
         stage('Validar Entorno') {
             steps {
                 echo '=== Comprobando versiones de Java y Maven en el agente ==='
-                sh 'java -version'
-                sh 'mvn -version'
+                run 'java -version'
+                run 'mvn -version'
             }
         }
 
@@ -39,7 +49,7 @@ pipeline {
             steps {
                 dir('Ejercicio5Cliente') {
                     echo '=== Compilando el microservicio frontend MVC con Java 21 ==='
-                    sh 'mvn -B clean compile'
+                    run 'mvn -B clean compile'
                 }
             }
         }
@@ -48,7 +58,7 @@ pipeline {
             steps {
                 dir('Ejercicio5Cliente') {
                     echo '=== Ejecutando pruebas JUnit 5 con mocks de RestTemplate y reporte JaCoCo ==='
-                    sh 'mvn -B verify'
+                    run 'mvn -B verify'
                 }
             }
         }
@@ -79,7 +89,7 @@ pipeline {
             steps {
                 dir('Ejercicio5Cliente') {
                     echo '=== Generando JAR empaquetado para distribución (skipTests) ==='
-                    sh 'mvn -B -DskipTests package'
+                    run 'mvn -B -DskipTests package'
                     archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
                 }
             }
