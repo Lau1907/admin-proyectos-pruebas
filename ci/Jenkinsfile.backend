@@ -6,7 +6,7 @@
 // =============================================================================
 
 // Helper para compatibilidad multiplataforma entre Linux (sh) y Windows (bat)
-def run(String cmd) {
+def ejecutar(String cmd) {
     if (isUnix()) {
         sh cmd
     } else {
@@ -40,8 +40,8 @@ pipeline {
         stage('Validar Entorno') {
             steps {
                 echo '=== Comprobando versiones de Java y Maven en el agente ==='
-                run 'java -version'
-                run 'mvn -version'
+                ejecutar('java -version')
+                ejecutar('mvn -version')
             }
         }
 
@@ -49,7 +49,7 @@ pipeline {
             steps {
                 dir('Ejercicio5MyAPIGestor') {
                     echo '=== Compilando el microservicio backend con Java 21 ==='
-                    run 'mvn -B clean compile'
+                    ejecutar('mvn -B clean compile')
                 }
             }
         }
@@ -59,7 +59,7 @@ pipeline {
                 dir('Ejercicio5MyAPIGestor') {
                     echo '=== Ejecutando pruebas JUnit 5 y generando reporte JaCoCo ==='
                     // Utiliza H2 en memoria configurado en src/test/resources/application.properties
-                    run 'mvn -B verify'
+                    ejecutar('mvn -B verify')
                 }
             }
         }
@@ -90,7 +90,7 @@ pipeline {
             steps {
                 dir('Ejercicio5MyAPIGestor') {
                     echo '=== Generando JAR empaquetado para distribución (skipTests) ==='
-                    run 'mvn -B -DskipTests package'
+                    ejecutar('mvn -B -DskipTests package')
                     archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
                 }
             }

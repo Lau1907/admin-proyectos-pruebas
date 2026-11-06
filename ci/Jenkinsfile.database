@@ -8,7 +8,7 @@
 // =============================================================================
 
 // Helper para compatibilidad multiplataforma entre Linux (sh) y Windows (bat)
-def run(String cmd) {
+def ejecutar(String cmd) {
     if (isUnix()) {
         sh cmd
     } else {
@@ -65,15 +65,15 @@ pipeline {
                     try {
                         if (fileExists(venvSqlfluff) || fileExists("${venvSqlfluff}.exe")) {
                             echo "sqlfluff detectado en entorno virtual local (${venvSqlfluff})."
-                            run "${venvSqlfluff} lint ${validateSql} --dialect mariadb"
+                            ejecutar("${venvSqlfluff} lint ${validateSql} --dialect mariadb")
                         } else {
                             echo 'Ejecutando sqlfluff desde PATH global del sistema...'
-                            run "sqlfluff lint ${validateSql} --dialect mariadb"
+                            ejecutar("sqlfluff lint ${validateSql} --dialect mariadb")
                         }
                     } catch (Exception e) {
                         echo "sqlfluff local no disponible o falló (${e.message}). Intentando ejecutar mediante contenedor Docker sqlfluff/sqlfluff..."
                         def mountDir = isUnix() ? '$(pwd)' : '%CD%'
-                        run "docker run --rm -v \"${mountDir}:/sql\" sqlfluff/sqlfluff:latest lint /sql/db/validate.sql --dialect mariadb"
+                        ejecutar("docker run --rm -v \"${mountDir}:/sql\" sqlfluff/sqlfluff:latest lint /sql/db/validate.sql --dialect mariadb")
                     }
                 }
             }
@@ -82,7 +82,7 @@ pipeline {
         stage('2. Desplegar MariaDB 11.3 Efímera en Docker') {
             steps {
                 echo "=== Levantando contenedor MariaDB 11.3 en puerto ${DB_PORT} ==="
-                run "docker run -d --name ${MARIADB_CONTAINER} -p ${DB_PORT}:3306 -e MYSQL_ROOT_PASSWORD=${DB_PASS} -e MYSQL_DATABASE=${DB_NAME} mariadb:11.3"
+                ejecutar("docker run -d --name ${MARIADB_CONTAINER} -p ${DB_PORT}:3306 -e MYSQL_ROOT_PASSWORD=${DB_PASS} -e MYSQL_DATABASE=${DB_NAME} mariadb:11.3")
 
                 echo '=== Esperando disponibilidad del motor MariaDB (Health Check con retry/sleep de Jenkins) ==='
                 script {
@@ -90,7 +90,7 @@ pipeline {
                     retry(15) {
                         sleep(2)
                         echo 'Comprobando conexión con MariaDB...'
-                        run "docker exec ${MARIADB_CONTAINER} mariadb-admin ping -u${DB_USER} -p${DB_PASS} --silent"
+                        ejecutar("docker exec ${MARIADB_CONTAINER} mariadb-admin ping -u${DB_USER} -p${DB_PASS} --silent")
                     }
                     echo ' MariaDB 11.3 está LISTA y aceptando conexiones.'
                 }
@@ -100,12 +100,12 @@ pipeline {
         stage('3. Cargar Esquema y Ejecutar Validaciones SQL') {
             steps {
                 echo '=== Restaurando dump-dbgestor-202406261453.sql en la base de datos efímera ==='
-                run "docker exec -i ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} ${DB_NAME} < dump-dbgestor-202406261453.sql"
+                ejecutar("docker exec -i ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} ${DB_NAME} < dump-dbgestor-202406261453.sql")
 
                 echo '=== Ejecutando db/validate.sql para auditoría de integridad y seguridad ==='
                 script {
                     def validateSql = isUnix() ? 'db/validate.sql' : 'db\\validate.sql'
-                    run "docker exec -i ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} -t ${DB_NAME} < ${validateSql} > validaciones_resultado.txt"
+                    ejecutar("docker exec -i ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} -t ${DB_NAME} < ${validateSql} > validaciones_resultado.txt")
                 }
 
                 echo '=== Archivando reporte de validaciones de base de datos ==='
@@ -115,9 +115,9 @@ pipeline {
                 script {
                     def migraSql = isUnix() ? 'db/migracion_hash_passwords.sql' : 'db\\migracion_hash_passwords.sql'
                     def validateSql = isUnix() ? 'db/validate.sql' : 'db\\validate.sql'
-                    run "docker exec -i ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} ${DB_NAME} < ${migraSql}"
+                    ejecutar("docker exec -i ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} ${DB_NAME} < ${migraSql}")
                     echo 'Post-migración: Re-ejecutando validación de contraseñas...'
-                    run "docker exec -i ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} -t ${DB_NAME} < ${validateSql} > validaciones_post_migracion.txt"
+                    ejecutar("docker exec -i ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} -t ${DB_NAME} < ${validateSql} > validaciones_post_migracion.txt")
                 }
                 archiveArtifacts artifacts: 'validaciones_post_migracion.txt', fingerprint: true
             }
@@ -133,7 +133,7 @@ pipeline {
                         "DB_USER=${DB_USER}",
                         "DB_PASS=${DB_PASS}"
                     ]) {
-                        run 'mvn -B verify'
+                        ejecutar('mvn -B verify')
                     }
                     junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: false
                     archiveArtifacts artifacts: 'target/site/jacoco/**', allowEmptyArchive: true
@@ -147,7 +147,7 @@ pipeline {
                     echo '=== Enviando análisis de código y cobertura JaCoCo a SonarQube ==='
                     // NOTA: 'SonarQube' debe coincidir con el nombre configurado en Jenkins -> "Configure System" -> SonarQube servers
                     withSonarQubeEnv('SonarQube') {
-                        run 'mvn -B sonar:sonar -Dsonar.exclusions=**/target/**'
+                        ejecutar('mvn -B sonar:sonar -Dsonar.exclusions=**/target/**')
                     }
                 }
 
@@ -171,7 +171,7 @@ pipeline {
             echo "=== Limpieza: deteniendo y eliminando contenedor efímero ${MARIADB_CONTAINER} ==="
             script {
                 try {
-                    run "docker rm -f ${MARIADB_CONTAINER}"
+                    ejecutar("docker rm -f ${MARIADB_CONTAINER}")
                 } catch (Exception e) {
                     echo "Aviso: No se pudo eliminar el contenedor ${MARIADB_CONTAINER} o ya no existía: ${e.message}"
                 }

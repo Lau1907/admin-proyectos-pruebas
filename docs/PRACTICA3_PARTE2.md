@@ -173,9 +173,9 @@
 Los tres pipelines se encuentran versionados en el directorio `ci/` y utilizan la directiva declarativa `tools { jdk 'JDK21'; maven 'Maven3' }`.
 
 > **Compatibilidad Multiplataforma (Windows y Linux):**  
-> Para evitar errores de ejecución en agentes Windows que operan como servicio (`Cannot run program "sh": CreateProcess error=2`), los tres pipelines incorporan al inicio el helper:
+> Para evitar errores de ejecución en agentes Windows que operan como servicio (`Cannot run program "sh": CreateProcess error=2`) y prevenir colisiones con pasos internos de Jenkins (como el step reservado `run`), los tres pipelines incorporan al inicio el helper personalizado:
 > ```groovy
-> def run(String cmd) {
+> def ejecutar(String cmd) {
 >     if (isUnix()) {
 >         sh cmd
 >     } else {
@@ -183,7 +183,7 @@ Los tres pipelines se encuentran versionados en el directorio `ci/` y utilizan l
 >     }
 > }
 > ```
-> Todos los comandos son ejecutados mediante `run(cmd)`, empleando sintaxis compatible con `cmd.exe` de Windows (`\`, redirecciones `<`, `.venv\Scripts\` para `sqlfluff` y `retry/sleep` de Jenkins en lugar de bucles bash).
+> Todos los comandos son ejecutados mediante llamadas formales con paréntesis `ejecutar('...')`, empleando sintaxis compatible con `cmd.exe` de Windows (`\`, redirecciones `<`, `.venv\Scripts\` para `sqlfluff` y `retry/sleep` de Jenkins en lugar de bucles bash).
 
 > **Requisito Global en Jenkins:** En la administración de Jenkins (*Manage Jenkins $\rightarrow$ Tools*), deben registrarse con esos nombres exactos:
 > - **JDK installations:** Nombre = `JDK21`, apuntando a la ruta de instalación de OpenJDK 21.
