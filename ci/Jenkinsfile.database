@@ -2,8 +2,8 @@
 // CI/CD Pipeline Declarativo para Base de Datos y Calidad Integral
 // Archivo: ci/Jenkinsfile.database
 // Propósito: Análisis estático SQL (sqlfluff vía Docker), Base MariaDB 11.3 efímera
-//            en Docker, validación de integridad de esquema/datos, pruebas de
-//            integración y análisis exhaustivo de calidad con SonarQube & Quality Gate.
+//            en Docker para auditoría/validación de esquema y datos (db/validate.sql),
+//            pruebas backend con H2 en memoria y análisis SonarQube & Quality Gate.
 // Compatible con agentes Windows (bat) y Linux/Unix (sh)
 // =============================================================================
 
@@ -36,12 +36,9 @@ pipeline {
     environment {
         // Identificador único para evitar colisiones entre builds concurrentes
         MARIADB_CONTAINER = "mariadb-gestor-ci-${BUILD_NUMBER}"
-        DB_HOST = "localhost"
-        DB_PORT = "3307"
         DB_NAME = "dbgestor"
         DB_USER = "root"
         DB_PASS = "ci_secure_password_2026"
-        DB_URL  = "jdbc:mariadb://${DB_HOST}:${DB_PORT}/${DB_NAME}"
     }
 
     options {
@@ -79,8 +76,10 @@ pipeline {
 
         stage('2. Desplegar MariaDB 11.3 Efímera en Docker') {
             steps {
-                echo "=== Levantando contenedor MariaDB 11.3 en puerto ${DB_PORT} ==="
-                ejecutar("docker run -d --name ${MARIADB_CONTAINER} -p ${DB_PORT}:3306 -e MYSQL_ROOT_PASSWORD=${DB_PASS} -e MYSQL_DATABASE=${DB_NAME} mariadb:11.3")
+                echo '=== Levantando contenedor MariaDB 11.3 efímero (sin exponer puertos al host) ==='
+                // No se publica ningún puerto al host (-p) para evitar conflictos locales;
+                // todas las operaciones se realizan aisladas mediante docker exec.
+                ejecutar("docker run -d --name ${MARIADB_CONTAINER} -e MYSQL_ROOT_PASSWORD=${DB_PASS} -e MYSQL_DATABASE=${DB_NAME} mariadb:11.3")
 
                 echo '=== Esperando disponibilidad del motor MariaDB (Health Check con retry/sleep de Jenkins) ==='
                 script {
@@ -121,18 +120,14 @@ pipeline {
             }
         }
 
-        stage('4. Pruebas Backend contra MariaDB Real') {
+        stage('4. Pruebas Backend (H2 en memoria)') {
             steps {
                 dir('Ejercicio5MyAPIGestor') {
-                    echo "=== Ejecutando mvn verify contra MariaDB real (${DB_URL}) ==="
-                    // Inyectamos las variables de entorno para que application.properties apunte a MariaDB
-                    withEnv([
-                        "DB_URL=${DB_URL}",
-                        "DB_USER=${DB_USER}",
-                        "DB_PASS=${DB_PASS}"
-                    ]) {
-                        ejecutar('mvn -B verify')
-                    }
+                    // NOTA: Las pruebas unitarias y de contexto del backend utilizan base de datos
+                    // H2 en memoria (configurada en src/test/resources/application.properties),
+                    // garantizando aislamiento hermético y rapidez sin depender del contenedor MariaDB.
+                    echo '=== Ejecutando mvn verify en backend utilizando H2 en memoria (perfil de test) ==='
+                    ejecutar('mvn -B verify')
                     junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: false
                     archiveArtifacts artifacts: 'target/site/jacoco/**', allowEmptyArchive: true
                 }
