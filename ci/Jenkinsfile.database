@@ -81,15 +81,20 @@ pipeline {
                 // todas las operaciones se realizan aisladas mediante docker exec.
                 ejecutar("docker run -d --name ${MARIADB_CONTAINER} -e MYSQL_ROOT_PASSWORD=${DB_PASS} -e MYSQL_DATABASE=${DB_NAME} mariadb:11.3")
 
-                echo '=== Esperando disponibilidad del motor MariaDB (Health Check con retry/sleep de Jenkins) ==='
+                echo '=== Esperando disponibilidad del motor MariaDB y autenticación (Health Check con SELECT 1) ==='
                 script {
-                    // Espera activa limpia usando retry y sleep nativos de Jenkins (sin bucles for de bash)
-                    retry(15) {
-                        sleep(2)
-                        echo 'Comprobando conexión con MariaDB...'
-                        ejecutar("docker exec ${MARIADB_CONTAINER} mariadb-admin ping -u${DB_USER} -p${DB_PASS} --silent")
+                    // Consulta autenticada real sobre la BD dbgestor; fallará hasta que el servidor final
+                    // haya completado la inicialización y aplicado las contraseñas reales.
+                    retry(30) {
+                        sleep(3)
+                        echo 'Comprobando autenticación y disponibilidad de MariaDB...'
+                        ejecutar("docker exec ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} -e \"SELECT 1\" ${DB_NAME}")
                     }
-                    echo ' MariaDB 11.3 está LISTA y aceptando conexiones.'
+
+                    // Verificación extra antes de proceder a la carga del dump
+                    echo "=== Verificación extra: comprobando acceso a la base de datos ${DB_NAME} ==="
+                    ejecutar("docker exec ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} -e \"SHOW TABLES\" ${DB_NAME}")
+                    echo " MariaDB 11.3 está LISTA y autenticando correctamente sobre ${DB_NAME}."
                 }
             }
         }
