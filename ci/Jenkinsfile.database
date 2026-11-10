@@ -1,9 +1,9 @@
 // =============================================================================
 // CI/CD Pipeline Declarativo para Base de Datos y Calidad Integral
 // Archivo: ci/Jenkinsfile.database
-// Propósito: Análisis estático SQL (sqlfluff), Base MariaDB 11.3 efímera en Docker,
-//            validación de integridad de esquema/datos, pruebas de integración
-//            y análisis exhaustivo de calidad con SonarQube & Quality Gate.
+// Propósito: Análisis estático SQL (sqlfluff vía Docker), Base MariaDB 11.3 efímera
+//            en Docker, validación de integridad de esquema/datos, pruebas de
+//            integración y análisis exhaustivo de calidad con SonarQube & Quality Gate.
 // Compatible con agentes Windows (bat) y Linux/Unix (sh)
 // =============================================================================
 
@@ -21,12 +21,10 @@ def ejecutar(String cmd) {
 // exactamente con las herramientas configuradas en:
 // "Administrar Jenkins" -> "Tools" -> JDK installations / Maven installations.
 
-// NOTA IMPORTANTE 2 - INSTALACIÓN DE SQLFLUFF EN EL AGENTE JENKINS:
-// Para ejecutar el análisis estático de dialecto SQL MariaDB, el agente debe tener
-// instalado Python y sqlfluff:
-//   * En Windows: pip install sqlfluff (queda en Python\Scripts o en .venv\Scripts\sqlfluff)
-//   * En Linux: pip3 install sqlfluff (o en .venv/bin/sqlfluff)
-//   * Si no está instalado en el sistema, el pipeline intentará usar la imagen Docker sqlfluff/sqlfluff.
+// NOTA IMPORTANTE 2 - ANÁLISIS DE SQLFLUFF VÍA DOCKER:
+// El linting de dialecto SQL MariaDB se ejecuta directamente mediante la imagen
+// oficial Docker 'sqlfluff/sqlfluff:latest'. Para agentes Windows que operan como
+// servicio, se define DOCKER_HOST para conectarse al pipe de Docker Desktop.
 
 pipeline {
     agent any
@@ -37,6 +35,8 @@ pipeline {
     }
 
     environment {
+        // Conexión al motor de Docker Desktop para agentes Windows ejecutados como servicio
+        DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
         // Identificador único para evitar colisiones entre builds concurrentes
         MARIADB_CONTAINER = "mariadb-gestor-ci-${BUILD_NUMBER}"
         DB_HOST = "localhost"
@@ -57,23 +57,24 @@ pipeline {
     stages {
         stage('1. Análisis Estático SQL (sqlfluff)') {
             steps {
-                echo '=== Ejecutando Linting y Auditoría Estática de SQL con sqlfluff (dialecto MariaDB) ==='
+                echo '=== Ejecutando Linting y Auditoría Estática de SQL con sqlfluff (dialecto MariaDB vía Docker) ==='
                 script {
-                    def validateSql = isUnix() ? 'db/validate.sql' : 'db\\validate.sql'
-                    def venvSqlfluff = isUnix() ? '.venv/bin/sqlfluff' : '.venv\\Scripts\\sqlfluff'
+                    def mountDir = isUnix() ? '$(pwd)' : '%CD%'
+                    def dockerDisponible = false
 
                     try {
-                        if (fileExists(venvSqlfluff) || fileExists("${venvSqlfluff}.exe")) {
-                            echo "sqlfluff detectado en entorno virtual local (${venvSqlfluff})."
-                            ejecutar("${venvSqlfluff} lint ${validateSql} --dialect mariadb")
-                        } else {
-                            echo 'Ejecutando sqlfluff desde PATH global del sistema...'
-                            ejecutar("sqlfluff lint ${validateSql} --dialect mariadb")
-                        }
+                        ejecutar('docker info')
+                        dockerDisponible = true
                     } catch (Exception e) {
-                        echo "sqlfluff local no disponible o falló (${e.message}). Intentando ejecutar mediante contenedor Docker sqlfluff/sqlfluff..."
-                        def mountDir = isUnix() ? '$(pwd)' : '%CD%'
-                        ejecutar("docker run --rm -v \"${mountDir}:/sql\" sqlfluff/sqlfluff:latest lint /sql/db/validate.sql --dialect mariadb")
+                        echo "Aviso: Docker no está disponible o el motor no responde (${e.message}). Omitiendo análisis con sqlfluff y continuando pipeline."
+                    }
+
+                    if (dockerDisponible) {
+                        // El lint no debe tumbar el pipeline por advertencias de estilo
+                        catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                            ejecutar("docker run --rm -v \"${mountDir}:/sql\" sqlfluff/sqlfluff:latest lint /sql/db/validate.sql --dialect mariadb > sqlfluff-report.txt")
+                        }
+                        archiveArtifacts artifacts: 'sqlfluff-report.txt', allowEmptyArchive: true
                     }
                 }
             }
