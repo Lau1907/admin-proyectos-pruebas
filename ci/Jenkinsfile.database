@@ -23,8 +23,7 @@ def ejecutar(String cmd) {
 
 // NOTA IMPORTANTE 2 - ANÁLISIS DE SQLFLUFF VÍA DOCKER:
 // El linting de dialecto SQL MariaDB se ejecuta directamente mediante la imagen
-// oficial Docker 'sqlfluff/sqlfluff:latest'. Para agentes Windows que operan como
-// servicio, se define DOCKER_HOST para conectarse al pipe de Docker Desktop.
+// oficial Docker 'sqlfluff/sqlfluff:latest'.
 
 pipeline {
     agent any
@@ -35,8 +34,6 @@ pipeline {
     }
 
     environment {
-        // Conexión al motor de Docker Desktop para agentes Windows ejecutados como servicio
-        DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
         // Identificador único para evitar colisiones entre builds concurrentes
         MARIADB_CONTAINER = "mariadb-gestor-ci-${BUILD_NUMBER}"
         DB_HOST = "localhost"
