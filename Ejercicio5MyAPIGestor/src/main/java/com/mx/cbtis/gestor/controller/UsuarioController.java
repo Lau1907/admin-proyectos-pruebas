@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mx.cbtis.gestor.dto.UsuarioDTO;
 import com.mx.cbtis.gestor.modelo.Usuario;
 import com.mx.cbtis.gestor.repository.UsuarioRepository;
 
@@ -26,13 +27,31 @@ public class UsuarioController {
 	UsuarioRepository usuariotable;
 
 	private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+	Usuario toEntity(UsuarioDTO dto) {
+		if (dto == null) {
+			return null;
+		}
+		Usuario usuario = new Usuario();
+		usuario.setId_usuario(dto.getId_usuario());
+		usuario.setNombre(dto.getNombre());
+		usuario.setCorreo_electronico(dto.getCorreo_electronico());
+		usuario.setContrasena(dto.getContrasena());
+		usuario.setRol(dto.getRol());
+		usuario.setImagen_usuario(dto.getImagen_usuario());
+		return usuario;
+	}
 	
 	@PostMapping("/getUsuarioLogin")
-	public Usuario getUsuarioLogin(@RequestBody Usuario userParam) {
+	public Usuario getUsuarioLogin(@RequestBody UsuarioDTO userParam) {
+		Usuario user = new Usuario();
+
+		if (userParam == null || userParam.getCorreo_electronico() == null) {
+			user.setNombre("000");
+			return user;
+		}
 		
 		Optional<Usuario> optionaluser = usuariotable.findByCorreoElectronico(userParam.getCorreo_electronico());
-		
-		Usuario user = new Usuario();
 		
 		if(optionaluser.isPresent()) {
 			Usuario dbUser = optionaluser.get();
@@ -50,7 +69,7 @@ public class UsuarioController {
 			} else {
 				user.setNombre("000");
 			}
-		}else {
+		} else {
 			user.setNombre("000");
 		}
 		
@@ -67,9 +86,10 @@ public class UsuarioController {
 	}
 	
 	@PostMapping("/addUsuario")
-	public int addUsuario(@Valid @RequestBody Usuario usuario) {
+	public int addUsuario(@Valid @RequestBody UsuarioDTO usuarioDTO) {
 		int flag = 0;
-		if(usuario != null) {
+		if(usuarioDTO != null) {
+			Usuario usuario = toEntity(usuarioDTO);
 			if (usuario.getContrasena() != null && !usuario.getContrasena().isEmpty()) {
 				if (!usuario.getContrasena().startsWith("$2a$") && !usuario.getContrasena().startsWith("$2b$")) {
 					usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
@@ -83,9 +103,10 @@ public class UsuarioController {
 	}
 	
 	@PostMapping("/updateUsuario")
-	public int updateUsuario(@RequestBody Usuario usuario) {
+	public int updateUsuario(@RequestBody UsuarioDTO usuarioDTO) {
 		int flag = 0;
-		if(usuario != null) {
+		if(usuarioDTO != null) {
+			Usuario usuario = toEntity(usuarioDTO);
 			if (usuario.getContrasena() != null && !usuario.getContrasena().isEmpty()) {
 				if (!usuario.getContrasena().startsWith("$2a$") && !usuario.getContrasena().startsWith("$2b$")) {
 					usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
