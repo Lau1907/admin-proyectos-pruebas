@@ -96,8 +96,8 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.2.5</version>
 				<configuration>
-					<!-- @{argLine} conserva el agente de JaCoCo; EnableDynamicAgentLoading evita el aviso de Mockito en JDK 21 -->
-					<argLine>@{argLine} -XX:+EnableDynamicAgentLoading</argLine>
+					<!-- @{argLine} conserva el agente de JaCoCo; EnableDynamicAgentLoading evita el aviso de Mockito en JDK 21; SerialGC con 128m optimiza memoria virtual en Windows -->
+					<argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Xmx128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1</argLine>
 					<includes>
 						<include>**/*Test.java</include>
 						<include>**/*Tests.java</include>

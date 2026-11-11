@@ -17,6 +17,7 @@ import com.mx.cbtis.gestor.modelo.Comentarios;
 import com.mx.cbtis.gestor.repository.ComentariosRepository;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -164,10 +165,13 @@ public class ComentariosControllerTest {
     }
 
     @Test
-    @DisplayName("UT-C10 Invocaciones directas con null -> retorna 0 (Fracaso)")
+    @DisplayName("UT-C10 Invocaciones directas con null -> retorna 0 sin llamar al repositorio (Fracaso)")
     void testUtC10_invocacionesConNull() {
         org.junit.jupiter.api.Assertions.assertEquals(0, comentariosController.addComentario(null));
         org.junit.jupiter.api.Assertions.assertEquals(0, comentariosController.updateComentario(null));
         org.junit.jupiter.api.Assertions.assertEquals(0, comentariosController.deleteComentario(null));
+
+        verify(comentariostable, never()).save(any());
+        verify(comentariostable, never()).delete(any());
     }
 }

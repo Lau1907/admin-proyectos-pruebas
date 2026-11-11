@@ -17,6 +17,7 @@ import com.mx.cbtis.gestor.modelo.Asignaciones;
 import com.mx.cbtis.gestor.repository.AsignacionesRepository;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -132,10 +133,13 @@ public class AsignacionesControllerTest {
     }
 
     @Test
-    @DisplayName("UT-A08 Invocaciones directas con null -> retorna 0 (Fracaso)")
+    @DisplayName("UT-A08 Invocaciones directas con null -> retorna 0 sin llamar al repositorio (Fracaso)")
     void testUtA08_invocacionesConNull() {
         org.junit.jupiter.api.Assertions.assertEquals(0, asignacionesController.addAsignacion(null));
         org.junit.jupiter.api.Assertions.assertEquals(0, asignacionesController.updateAsignacion(null));
         org.junit.jupiter.api.Assertions.assertEquals(0, asignacionesController.deleteAsignacion(null));
+
+        verify(asignacionestable, never()).save(any());
+        verify(asignacionestable, never()).delete(any());
     }
 }

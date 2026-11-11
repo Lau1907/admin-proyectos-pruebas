@@ -17,6 +17,7 @@ import com.mx.cbtis.gestor.modelo.Tareas;
 import com.mx.cbtis.gestor.repository.TareasRepository;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -174,10 +175,13 @@ public class TareasControllerTest {
     }
 
     @Test
-    @DisplayName("UT-E26 Invocaciones directas con null -> retorna 0 (Fracaso)")
+    @DisplayName("UT-E26 Invocaciones directas con null -> retorna 0 sin llamar al repositorio (Fracaso)")
     void testUtE26_invocacionesConNull() {
         org.junit.jupiter.api.Assertions.assertEquals(0, tareasController.addTareas(null));
         org.junit.jupiter.api.Assertions.assertEquals(0, tareasController.updateTareas(null));
         org.junit.jupiter.api.Assertions.assertEquals(0, tareasController.deleteTareas(null));
+
+        verify(tareastable, never()).save(any());
+        verify(tareastable, never()).delete(any());
     }
 }

@@ -17,6 +17,7 @@ import com.mx.cbtis.gestor.modelo.Proyectos;
 import com.mx.cbtis.gestor.repository.ProtectosRepository;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -139,10 +140,13 @@ public class ProyectosControllerTest {
     }
 
     @Test
-    @DisplayName("UT-E17 Invocaciones directas con null -> retorna 0 (Fracaso)")
+    @DisplayName("UT-E17 Invocaciones directas con null -> retorna 0 sin llamar al repositorio (Fracaso)")
     void testUtE17_invocacionesConNull() {
         org.junit.jupiter.api.Assertions.assertEquals(0, proyectosController.addProyecto(null));
         org.junit.jupiter.api.Assertions.assertEquals(0, proyectosController.updateProyecto(null));
         org.junit.jupiter.api.Assertions.assertEquals(0, proyectosController.deleteProyecto(null));
+
+        verify(proyectostable, never()).save(any());
+        verify(proyectostable, never()).delete(any());
     }
 }
