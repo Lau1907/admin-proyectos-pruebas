@@ -42,38 +42,50 @@ public class UsuarioController {
 		return usuario;
 	}
 	
+	private boolean verificarPassword(String storedPass, String rawPass) {
+		if (storedPass == null || rawPass == null) {
+			return false;
+		}
+		if (storedPass.startsWith("$2a$") || storedPass.startsWith("$2b$") || storedPass.startsWith("$2y$")) {
+			return passwordEncoder.matches(rawPass, storedPass);
+		}
+		return storedPass.equals(rawPass) || passwordEncoder.matches(rawPass, storedPass);
+	}
+
+	private String hashContrasena(String rawPass) {
+		if (rawPass != null && !rawPass.isEmpty() && !rawPass.startsWith("$2a$") && !rawPass.startsWith("$2b$")) {
+			return passwordEncoder.encode(rawPass);
+		}
+		return rawPass;
+	}
+
+	private int guardarUsuario(UsuarioDTO usuarioDTO) {
+		if (usuarioDTO == null) {
+			return 0;
+		}
+		Usuario usuario = toEntity(usuarioDTO);
+		usuario.setContrasena(hashContrasena(usuario.getContrasena()));
+		usuariotable.save(usuario);
+		return 1;
+	}
+	
 	@PostMapping("/getUsuarioLogin")
 	public Usuario getUsuarioLogin(@RequestBody UsuarioDTO userParam) {
-		Usuario user = new Usuario();
+		Usuario fallback = new Usuario();
+		fallback.setNombre("000");
 
 		if (userParam == null || userParam.getCorreo_electronico() == null) {
-			user.setNombre("000");
-			return user;
+			return fallback;
 		}
 		
 		Optional<Usuario> optionaluser = usuariotable.findByCorreoElectronico(userParam.getCorreo_electronico());
-		
-		if(optionaluser.isPresent()) {
+		if (optionaluser.isPresent()) {
 			Usuario dbUser = optionaluser.get();
-			String storedPass = dbUser.getContrasena();
-			boolean matches = false;
-			if (storedPass != null && userParam.getContrasena() != null) {
-				if (storedPass.startsWith("$2a$") || storedPass.startsWith("$2b$") || storedPass.startsWith("$2y$")) {
-					matches = passwordEncoder.matches(userParam.getContrasena(), storedPass);
-				} else {
-					matches = storedPass.equals(userParam.getContrasena()) || passwordEncoder.matches(userParam.getContrasena(), storedPass);
-				}
+			if (verificarPassword(dbUser.getContrasena(), userParam.getContrasena())) {
+				return dbUser;
 			}
-			if (matches) {
-				user = dbUser;
-			} else {
-				user.setNombre("000");
-			}
-		} else {
-			user.setNombre("000");
 		}
-		
-		return user;
+		return fallback;
 	}
 	
 	@GetMapping("/buscarUsuario")
@@ -87,36 +99,12 @@ public class UsuarioController {
 	
 	@PostMapping("/addUsuario")
 	public int addUsuario(@Valid @RequestBody UsuarioDTO usuarioDTO) {
-		int flag = 0;
-		if(usuarioDTO != null) {
-			Usuario usuario = toEntity(usuarioDTO);
-			if (usuario.getContrasena() != null && !usuario.getContrasena().isEmpty()) {
-				if (!usuario.getContrasena().startsWith("$2a$") && !usuario.getContrasena().startsWith("$2b$")) {
-					usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
-				}
-			}
-			usuariotable.save(usuario);
-			flag = 1;
-		}
-		
-		return flag;
+		return guardarUsuario(usuarioDTO);
 	}
 	
 	@PostMapping("/updateUsuario")
 	public int updateUsuario(@RequestBody UsuarioDTO usuarioDTO) {
-		int flag = 0;
-		if(usuarioDTO != null) {
-			Usuario usuario = toEntity(usuarioDTO);
-			if (usuario.getContrasena() != null && !usuario.getContrasena().isEmpty()) {
-				if (!usuario.getContrasena().startsWith("$2a$") && !usuario.getContrasena().startsWith("$2b$")) {
-					usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
-				}
-			}
-			usuariotable.save(usuario);
-			flag = 1;
-		}
-		
-		return flag;
+		return guardarUsuario(usuarioDTO);
 	}
 	
 	@DeleteMapping("/deleteUsuario")
