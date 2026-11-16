@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import javax.validation.Valid;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,10 +22,13 @@ import com.mx.cbtis.gestor.repository.UsuarioRepository;
 @RestController
 public class UsuarioController {
 	
-	@Autowired
-	UsuarioRepository usuariotable;
+	private final UsuarioRepository usuariotable;
 
 	private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+	public UsuarioController(UsuarioRepository usuariotable) {
+		this.usuariotable = usuariotable;
+	}
 
 	Usuario toEntity(UsuarioDTO dto) {
 		if (dto == null) {
