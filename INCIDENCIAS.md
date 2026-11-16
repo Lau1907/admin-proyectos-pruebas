@@ -4,16 +4,16 @@
 > **Repositorio:** `admin-proyectos-main`  
 > **Microservicios:** `Ejercicio5MyAPIGestor` (Backend REST) y `Ejercicio5Cliente` (Frontend MVC)  
 > **Fecha de Elaboración:** Noviembre 2026  
-> **Responsable:** Ingeniero DevOps / QA Senior  
+> **Responsable:** Laura Berenice Tapia Cid  
 
 ---
 
 ## 1. Resumen Ejecutivo
 
-Durante la auditoría estática de código, análisis de seguridad en SonarQube, análisis de cobertura con JaCoCo y linting estático de base de datos con sqlfluff sobre la arquitectura de microservicios, se identificaron **140 issues en SonarQube** clasificados en tres dimensiones de calidad:
-- **18 Security Issues (Vulnerabilidades y Hotspots de Seguridad)**
-- **5 Reliability Issues (Bugs de Confiabilidad y Null Safety)**
-- **122 Maintainability Issues (Deuda Técnica y Code Smells)**
+Durante la auditoría estática de código, análisis de seguridad en SonarQube, análisis de cobertura con JaCoCo y linting estático de base de datos con sqlfluff sobre la arquitectura de microservicios, se auditaron **162 issues en SonarQube** (133 abiertos reales actuales y 29 corregidos/cerrados) clasificados en tres dimensiones de calidad:
+- **18 Security Issues (Vulnerabilidades):** 15 abiertos aceptados como deuda técnica y 3 corregidos con DTO.
+- **5 Reliability Issues (Bugs de Confiabilidad y Null Safety):** 5 corregidos, 0 abiertos en SonarQube.
+- **139 Maintainability Issues (Deuda Técnica y Code Smells):** 118 abiertos reales en SonarQube y 21 corregidos.
 
 Además, se auditaron vulnerabilidades críticas previas de autenticación en texto plano, exposición de credenciales JDBC en properties y antipatrones de programación (NPE por `.equals(null)`).
 
@@ -21,34 +21,42 @@ A continuación se documenta la clasificación formal de cada hallazgo, las reme
 
 ---
 
-## 2. Clasificación Global de los 140 Hallazgos de SonarQube
+## 2. Clasificación Global de los Issues de SonarQube (133 Abiertos Reales)
 
-| Dimensión SonarQube | Cantidad | Real Corregido | Real Aceptado con Justificación | Falso Positivo Justificado | Estado General |
-|---|---|---|---|---|---|
-| **Security (Seguridad)** | **18** | **3** (Mass Assignment en `UsuarioController` mitigado con `UsuarioDTO`) + 2 (BCrypt / Env Vars) | **15** (Mass Assignment en `Tareas`, `Proyectos`, `Comentarios`, `Asignaciones` y `deleteUsuario`) | 0 | Mitigado en autenticación/usuarios; restante documentado como deuda técnica aceptada. |
-| **Reliability (Confiabilidad / Bugs)** | **5** | **5** (Corrección de `.equals(null)`, validación de Optional, ramas nulas en controllers) | 0 | 0 | **100% Corregido** y verificado con pruebas unitarias. |
-| **Maintainability (Mantenibilidad / Code Smells)** | **122** | **18** (Limpieza de código muerto, imports, aserciones y branches) | **103** (Convención camelCase en entidades, campos fecha como String) | **1** (`sonar.exclusions=**/target/**`) | Aceptado justificadamente para preservar contratos REST y compatibilidad con el frontend. |
-| **Total** | **140** | **28** | **118** | **1** | **Calidad Aprobada para CI/CD** |
+| Dimensión SonarQube | Total Auditado | Corregido (Ya no aparece en Sonar) | Abierto en Sonar (Deuda Aceptada) | Estado General |
+|---|---|---|---|---|
+| **Security (Seguridad / Vulnerabilidades)** | **18** | **3** (Mass Assignment en `UsuarioController` mitigado con `UsuarioDTO`) | **15** (Mass Assignment `java:S4684` en `Tareas`, `Proyectos`, `Comentarios`, `Asignaciones` y `deleteUsuario`) | Mitigado en usuario; 15 abiertos documentados como deuda técnica aceptada. |
+| **Reliability (Confiabilidad / Bugs)** | **5** | **5** (Corrección de `.equals(null)`, validación de Optional y ramas nulas) | **0** | **100% Corregido**; 0 bugs abiertos en SonarQube. |
+| **Maintainability (Mantenibilidad / Code Smells)** | **139** | **21** (15 en `UsuarioDTO`, 2 en `UsuarioController`, 4 en pruebas/limpieza) | **118** (45 S117, 38 S100, 19 S116, 5 S6813, 4 S4144, 3 S1128, 2 S1488, 1 S5838, 1 S125) | Aceptado justificadamente para preservar modelos de BD MariaDB y contratos REST. |
+| **Total** | **162** | **29** | **133** | **133 issues abiertos reales en SonarQube** |
 
 ---
 
 ## 3. Matriz Detallada de Hallazgos e Incidencias
 
-| # | Hallazgo | Ubicación | Severidad / Categoría | Clasificación | Acción Tomada / Justificación Técnica | Commit |
+| # | Hallazgo / Regla SonarQube | Ubicación | Severidad / Categoría | Clasificación | Acción Tomada / Justificación Técnica | Commit |
 |---|---|---|---|---|---|---|
-| **1** | **Vulnerabilidad Mass Assignment (CWE-915 / OWASP A08:2021):** "Replace this persistent entity with a simple POJO or DTO object" en controladores REST | `UsuarioController.java` (`addUsuario`, `updateUsuario`, `getUsuarioLogin`) | **High (Security)** | **Real Corregido** | Se desacopló la entidad JPA `Usuario` del contrato de entrada mediante la creación de `UsuarioDTO`. Se implementaron validaciones Bean Validation (`@Valid`, `@NotBlank`) y mapeo explícito interno `toEntity()`. | `ac8cb1f` |
-| **2** | **Mass Assignment pendiente en controladores restantes:** Uso directo de entidades JPA `@RequestBody` | `TareasController`, `ProyectosController`, `ComentariosController`, `AsignacionesController` | **High (Security)** | **Real Aceptado con Justificación (Deuda Técnica)** | **Justificación:** Para no romper el contrato REST y la interacción síncrona con `Ejercicio5Cliente` en esta entrega, se aceptan temporalmente las entidades como payload de entrada. El riesgo se encuentra acotado porque las peticiones provienen exclusivamente del backend MVC interno y no de clientes públicos no autenticados. La migración a DTOs (`TareasDTO`, `ProyectosDTO`, etc.) queda programada para la siguiente fase. | Documentado |
+| **1** | **Vulnerabilidad Mass Assignment (CWE-915 / OWASP A08:2021 / `java:S4684`):** "Replace this persistent entity with a simple POJO or DTO object" en controladores REST | `UsuarioController.java` (`addUsuario`, `updateUsuario`, `getUsuarioLogin`) | **Critical (Security)** | **Real Corregido** | Se desacopló la entidad JPA `Usuario` del contrato de entrada mediante `UsuarioDTO`. Se implementaron validaciones Bean Validation (`@Valid`, `@NotBlank`) y mapeo explícito interno `toEntity()`. | `ac8cb1f` / `f243c06` |
+| **2** | **Mass Assignment pendiente en controladores restantes (`java:S4684`):** 15 issues por uso directo de entidades JPA en `@RequestBody` | `TareasController` (3), `ProyectosController` (3), `ComentariosController` (3), `AsignacionesController` (3), `UsuarioController.deleteUsuario` (1), y entidades relacionadas | **Critical (Security)** | **Real Aceptado con Justificación (Deuda Técnica)** | **Justificación:** El riesgo persiste debido a que los endpoints no cuentan con autenticación. Se acepta temporalmente para no romper la comunicación síncrona con `Ejercicio5Cliente`. La mitigación pendiente consiste en implementar DTOs específicos y un esquema formal de autenticación. | Documentado |
 | **3** | Almacenamiento y autenticación de contraseñas en texto plano (CWE-256 / CWE-312 / OWASP A02:2021) | `Usuario.java`, `UsuarioRepository.java`, `UsuarioController.java` | **Crítica (Security)** | **Real Corregido** | Implementación de hashing seguro con **BCrypt** (`spring-security-crypto`). Búsqueda única por correo y validación con `passwordEncoder.matches()`. Script `db/migracion_hash_passwords.sql` generado con hashes para el dump. | `12e540e` |
 | **4** | Exposición de credenciales JDBC y usuario root en texto plano (CWE-798 / OWASP A05:2021) | `Ejercicio5MyAPIGestor/src/main/resources/application.properties` | **Alta (Security)** | **Real Corregido** | Parametrización de propiedades mediante variables de entorno `${DB_URL}`, `${DB_USER}`, `${DB_PASS}` con fallbacks seguros. | `b145ce3` |
 | **5** | **Bug de Confiabilidad:** Comprobación de nulidad defectuosa mediante `if (!x.equals(null))` (CWE-476 / NPE) | Los 5 controladores REST (`UsuarioController`, `TareasController`, `ProyectosController`, `ComentariosController`, `AsignacionesController`) | **Major (Reliability)** | **Real Corregido** | Según el contrato de `Object.equals()`, si la referencia `x` es nula se lanza `NullPointerException`. Se reemplazó por la comprobación canónica `if (x != null)`. | `e20a79e` / `812cede` |
 | **6** | **Ramas no cubiertas (Condiciones else de null checks):** Retorno seguro al invocar con parámetros nulos | Métodos `add*`, `update*`, `delete*` de los 5 controladores | **Major (Reliability / Test)** | **Real Corregido** | Se crearon pruebas unitarias específicas enviando `null` directamente a cada método y verificando que retornan `0` y nunca interactúan con los repositorios (`verify(..., never()).save/delete(...)`). | `6f7f55b` |
 | **7** | Mapeo de columnas temporales como `String` en lugar de `java.time.LocalDate` / `LocalDateTime` | Entidades JPA (`Usuario`, `Tareas`, `Proyectos`, `Asignaciones`, `Comentarios`) | **Minor (Maintainability)** | **Real Aceptado con Justificación** | **Justificación:** Las entidades mantienen tipo `String` para garantizar compatibilidad binaria estricta con los formularios HTML5 (`<input type="date">` formato `yyyy-MM-dd`) y los bindings de Spring MVC en `Ejercicio5Cliente`. Migrar a `LocalDate` requeriría refactorizar conversores custom y deserializadores en ambos microservicios. | Documentado |
-| **8** | Convenciones de nombres de atributos en entidades no conformes con camelCase (`id_usuario`, `correo_electronico`, etc.) | Entidades JPA y DTOs | **Minor (Maintainability)** | **Real Aceptado con Justificación** | **Justificación:** Los atributos reflejan exactamente las columnas de la base de datos MariaDB heredada y los campos JSON esperados por las plantillas Thymeleaf. Modificarlos implicaría renombrar getters/setters en cascada en ambos microservicios y arriesgar incompatibilidades de mapeo. | Documentado |
-| **9** | Visibilidad pública de clases y métodos en pruebas unitarias JUnit 5 | Clases `*Test.java` | **Minor (Maintainability)** | **Real Aceptado con Justificación** | JUnit 5 permite visibilidad de paquete (`package-private`). Mantener `public` en algunas suites no afecta la ejecución, el reporte de JaCoCo ni el ciclo de vida de Surefire. | Documentado |
-| **10** | Exclusión de artefactos compilados en escaneo estático (`**/target/**`) | `pom.xml` (`sonar.exclusions`) | **Minor (Maintainability)** | **Falso Positivo Justificado** | Previene que SonarQube analice bytecode duplicado o clases sintéticas generadas en `target/`, asegurando que el análisis de cobertura lea fielmente `target/site/jacoco/jacoco.xml`. | `bec893b` / `52e1e74` |
-| **11** | Dependencia de base de datos externa MariaDB en fase de test de CI (`mvn test`) | `Ejercicio5MyAPIGestor/src/test/resources/application.properties` | **High (Arquitectura)** | **Real Corregido** | Despliegue de H2 Database en modo emulación MariaDB (`MODE=MariaDB`) en scope de pruebas, independizando la compilación y CI de conexiones externas. | `b145ce3` / `812cede` |
-| **12** | Fragilidad ante respuestas HTTP nulas en llamadas REST (`RestTemplate`) | `Ejercicio5Cliente/.../GestorController.java` | **Major (Reliability)** | **Real Corregido** | Inyección segura de `RestTemplate` como `@Bean` y manejo de nulos en arrays de respuesta para evitar fallos por contingencias de red. | `52e1e74` |
-| **13** | Inconsistencias de formato y estilo SQL en script de validación (`LT01`, `LT02`, `LT05`, `LT09`, `CP02`, `AL01`) | `db/validate.sql` | **Minor (Maintainability)** | **Real Corregido** | Creación de `.sqlfluff` con dialecto MariaDB y corrección integral de 38 reglas con `sqlfluff fix` y revisión manual. Salida validada contra MariaDB 11.3. | `9079971` / `1e0e1f1` |
+| **8** | Convenciones de nombres en entidades JPA no conformes con camelCase (102 issues: 45 `java:S117`, 38 `java:S100`, 19 `java:S116`) | Entidades JPA (`Usuario`, `Tareas`, `Proyectos`, `Asignaciones`, `Comentarios`) | **Minor (Maintainability)** | **Real Aceptado con Justificación** | **Justificación:** Los atributos y métodos reflejan fielmente las columnas de la base de datos MariaDB heredada (`id_usuario`, `correo_electronico`, etc.) y las plantillas Thymeleaf. Modificarlos en cascada en las entidades implicaría riesgos de mapeo con MariaDB y el frontend MVC. | Documentado |
+| **9** | Inyección de dependencias por campo (`java:S6813`): 5 issues por `@Autowired` en atributos en vez de constructor | Los 5 controladores REST | **Major (Maintainability)** | **Real Aceptado con Justificación** | Inyección por campo preexistente de Spring Boot. Se acepta temporalmente dado que las suites de pruebas unitarias instancian y mockean dependencias directamente o vía `@WebMvcTest`. | Documentado |
+| **10** | Implementaciones de métodos idénticas en controladores restantes (`java:S4144`): 4 issues | Controladores restantes (`TareasController`, `ProyectosController`, etc.) | **Major (Maintainability)** | **Real Aceptado con Justificación** | Se acepta temporalmente para no alterar el flujo interno de los controladores pendientes de migración a DTO. | Documentado |
+| **11** | Imports no utilizados restantes (`java:S1128`): 3 issues | Clases del backend | **Minor (Maintainability)** | **Real Aceptado con Justificación** | Imports residuales no funcionales aceptados como deuda técnica menor. | Documentado |
+| **12** | Retorno inmediato de variables locales temporales (`java:S1488`): 2 issues | Clases del backend | **Minor (Maintainability)** | **Real Aceptado con Justificación** | Variables intermedias para depuración mantenidas por legibilidad. | Documentado |
+| **13** | Simplificación de aserción AssertJ (`java:S5838`): 1 issue | Clases de prueba | **Minor (Maintainability)** | **Real Aceptado con Justificación** | Aserción válida en suite de test sin impacto en ejecución. | Documentado |
+| **14** | Sección de código comentado (`java:S125`): 1 issue | Código fuente del backend | **Major (Maintainability)** | **Real Aceptado con Justificación** | Comentario conservado como referencia histórica de desarrollo. | Documentado |
+| **15** | Visibilidad pública de clases y métodos en pruebas unitarias JUnit 5 | Clases `*Test.java` | **Minor (Maintainability)** | **Real Aceptado con Justificación** | JUnit 5 permite visibilidad de paquete (`package-private`). Mantener `public` en algunas suites no afecta la ejecución, el reporte de JaCoCo ni el ciclo de vida de Surefire. | Documentado |
+| **16** | Dependencia de base de datos externa MariaDB en fase de test de CI (`mvn test`) | `Ejercicio5MyAPIGestor/src/test/resources/application.properties` | **High (Arquitectura)** | **Real Corregido** | Despliegue de H2 Database en modo emulación MariaDB (`MODE=MariaDB`) en scope de pruebas, independizando la compilación y CI de conexiones externas. | `b145ce3` / `812cede` |
+| **17** | Fragilidad ante respuestas HTTP nulas en llamadas REST (`RestTemplate`) | `Ejercicio5Cliente/.../GestorController.java` | **Major (Reliability)** | **Real Corregido** | Inyección segura de `RestTemplate` como `@Bean` y manejo de nulos en arrays de respuesta para evitar fallos por contingencias de red. | `52e1e74` |
+| **18** | Inconsistencias de formato y estilo SQL en script de validación (`LT01`, `LT02`, `LT05`, `LT09`, `CP02`, `AL01`) | `db/validate.sql` | **Minor (Maintainability)** | **Real Corregido** | Creación de `.sqlfluff` con dialecto MariaDB y corrección integral de 38 reglas con `sqlfluff fix` y revisión manual. Salida validada contra MariaDB 11.3. | `9079971` / `1e0e1f1` |
+
+> **Nota de Configuración en pom.xml:**  
+> Las propiedades `<sonar.exclusions>**/target/**</sonar.exclusions>` y `<sonar.cpd.exclusions>**/src/test/**</sonar.cpd.exclusions>` corresponden a configuraciones de escaneo estático y análisis de duplicación (CPD), respectivamente. Su objetivo es evitar falsos positivos en bytecode generado y aislar las aserciones repetitivas de las suites de prueba unitaria sin relajar la inspección ni excluir código fuente productivo de `src/main` (Commits `bec893b` y `23a722a`).
 
 ---
 
@@ -60,43 +68,61 @@ Al recibir directamente una entidad persistente de JPA (`Usuario`) en un método
 2. Se expone la estructura interna del modelo de persistencia (anotaciones `@Entity`, `@Table`, `@Id`).
 
 ### 4.2. Implementación de `UsuarioDTO`
-Se diseñó la clase de transferencia de datos `UsuarioDTO` ubicada en `com.mx.cbtis.gestor.dto`:
+Se diseñó la clase de transferencia de datos `UsuarioDTO` ubicada en `com.mx.cbtis.gestor.dto` utilizando la convención estándar `camelCase` para el cumplimiento de reglas SonarQube (`java:S116`, `java:S117`, `java:S100`), junto con `@JsonProperty` para conservar compatibilidad con el JSON en snake_case y Bean Validation (`spring-boot-starter-validation`):
 
 ```java
 package com.mx.cbtis.gestor.dto;
 
 import javax.validation.constraints.NotBlank;
-import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class UsuarioDTO implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class UsuarioDTO {
 
-    private Integer id_usuario;
+	@JsonProperty("id_usuario")
+	private Integer idUsuario;
 
-    @NotBlank(message = "El nombre es obligatorio")
-    private String nombre;
+	@JsonProperty("nombre")
+	private String nombre;
 
-    @NotBlank(message = "El correo electrónico es obligatorio")
-    private String correo_electronico;
+	@NotBlank
+	@JsonProperty("correo_electronico")
+	private String correoElectronico;
 
-    @NotBlank(message = "La contraseña es obligatoria")
-    private String contrasena;
+	@NotBlank
+	@JsonProperty("contrasena")
+	private String contrasena;
 
-    private String rol;
-    private String imagen_usuario;
+	@JsonProperty("rol")
+	private String rol;
 
-    // Constructores, Getters y Setters...
+	@JsonProperty("imagen_usuario")
+	private String imagenUsuario;
+
+	public UsuarioDTO() {
+	}
+
+	public UsuarioDTO(Integer idUsuario, String nombre, String correoElectronico, String contrasena, String rol,
+			String imagenUsuario) {
+		this.idUsuario = idUsuario;
+		this.nombre = nombre;
+		this.correoElectronico = correoElectronico;
+		this.contrasena = contrasena;
+		this.rol = rol;
+		this.imagenUsuario = imagenUsuario;
+	}
+
+	// Getters y Setters camelCase (getIdUsuario, setIdUsuario, getCorreoElectronico, etc.)
 }
 ```
 
 ### 4.3. Refactorización en `UsuarioController`
 Los endpoints críticos de recepción de datos fueron actualizados para recibir `UsuarioDTO`:
-- `POST /getUsuarioLogin`: Recibe `UsuarioDTO`, realiza comprobación defensiva de nulidad, busca por correo y valida con BCrypt. Retorna la entidad autenticada o un objeto de rechazo con nombre `"000"`.
-- `POST /addUsuario`: Recibe `@Valid @RequestBody UsuarioDTO`, aplica el mapeo a entidad mediante `toEntity()`, aplica hash BCrypt si la contraseña no está cifrada, guarda vía repositorio y retorna `1` (éxito) o `0` (fracaso).
-- `POST /updateUsuario`: Recibe `UsuarioDTO`, mapea a entidad, gestiona el hash seguro y guarda los cambios retornando `1` o `0`.
+- `POST /getUsuarioLogin`: Recibe `UsuarioDTO`, realiza comprobación defensiva de nulidad, busca por correo y valida con BCrypt mediante el helper privado `verificarPassword(...)`. Retorna la entidad autenticada o un objeto de rechazo con nombre `"000"`.
+- `POST /addUsuario`: Recibe `@Valid @RequestBody UsuarioDTO`, delega en `guardarUsuario(...)` que aplica el mapeo a entidad mediante `toEntity()`, cifra la contraseña con BCrypt mediante `hashContrasena(...)` si no está cifrada, guarda vía repositorio y retorna `1` (éxito) o `0` (fracaso).
+- `POST /updateUsuario`: Recibe `UsuarioDTO` y delega exactamente a `guardarUsuario(...)`, garantizando consistencia y eliminando duplicación de código (`java:S4144`).
 
 ### 4.4. Compatibilidad con el Frontend (`Ejercicio5Cliente`)
-- **Nombres de atributos:** Exactamente idénticos (`id_usuario`, `nombre`, `correo_electronico`, `contrasena`, `rol`, `imagen_usuario`).
+- **Nombres de atributos serializados:** Gracias a `@JsonProperty("id_usuario")`, `@JsonProperty("correo_electronico")` y `@JsonProperty("imagen_usuario")`, los nombres en los mensajes JSON se mantienen exactamente idénticos.
 - **Serialización JSON:** El payload JSON emitido por `RestTemplate` desde el frontend contiene exactamente las mismas llaves, permitiendo que Jackson deserialice en `UsuarioDTO` sin requerir ningún cambio en `Ejercicio5Cliente`.
 - **Rutas HTTP y Códigos de Respuesta:** No se modificaron URLs, métodos HTTP (`GET`, `POST`, `DELETE`) ni tipos de retorno (`int` y `Usuario`), preservando el 100% de la compatibilidad operativa.
 
@@ -111,31 +137,32 @@ Los siguientes controladores mantienen la recepción de entidades JPA directamen
 4. `AsignacionesController` (`addAsignaciones`, `updateAsignaciones`, `deleteAsignaciones`)
 5. `UsuarioController` (`deleteUsuario`)
 
-### Justificación de Aceptación:
-- **Ámbito controlado:** El frontend `Ejercicio5Cliente` es un cliente MVC privado dentro de la misma red institucional que consume estos endpoints; no existe exposición pública directa a internet de la API Gestor sin pasar por la capa de control.
-- **Riesgo de regresión mitigado:** Refactorizar masivamente los 4 controladores restantes en esta entrega implicaba crear 4 DTOs adicionales (`TareasDTO`, `ProyectosDTO`, `ComentariosDTO`, `AsignacionesDTO`), modificar sus contratos y adaptar múltiples modelos de enlace. Se clasifican como **Deuda Técnica Aceptada** para priorizar estabilidad en la entrega actual de la Práctica 3.
-- **Blindaje mediante pruebas unitarias:** Todos los métodos de estos 4 controladores cuentan con pruebas unitarias exhaustivas con Mockito que validan el comportamiento ante payloads válidos, malformados y nulos (con aserciones `never()` sobre los repositorios).
+### Justificación de Aceptación y Estado del Riesgo:
+- **Persistencia del riesgo (CWE-915):** El riesgo de Mass Assignment continúa presente en estos controladores mientras continúen vinculando entidades persistentes directamente en el cuerpo de las peticiones HTTP.
+- **Ausencia de autenticación en endpoints:** Actualmente la API REST no cuenta con un mecanismo de autenticación ni autorización perimetral (como JWT o Spring Security a nivel de endpoint), por lo que cualquier cliente con conectividad a la red puede invocar estos métodos directamente.
+- **Mitigación pendiente:** La remediación definitiva requiere desacoplar las entidades restantes creando sus respectivos DTOs (`TareasDTO`, `ProyectosDTO`, `ComentariosDTO`, `AsignacionesDTO`, y DTO de baja) e incorporar un esquema formal de autenticación y autorización (Spring Security / tokens de sesión) para blindar el acceso a los endpoints.
+- **Aceptación temporal:** Se aceptan como deuda técnica documentada exclusivamente para no alterar los contratos REST síncronos con `Ejercicio5Cliente` en el cierre de la Práctica 3, respaldando la estabilidad funcional mediante la suite de pruebas unitarias con Mockito (`verify(..., never())`).
 
 ---
 
 ## 6. Cobertura de Pruebas Unitarias y Métricas JaCoCo
 
-Tras la adición de pruebas para todas las ramas nulas (`null-checks`) y variantes de hashing, las métricas de cobertura del Backend (`Ejercicio5MyAPIGestor`) alcanzaron la excelencia:
+Tras la adición de pruebas para todas las ramas nulas (`null-checks`), variantes de hashing y refactorización de controladores, las métricas de cobertura del Backend (`Ejercicio5MyAPIGestor`) verificadas contra `target/site/jacoco/jacoco.csv` son:
 
 | Elemento | Total Instrucciones | Cobertura Instrucciones | Total Ramas (Branches) | Cobertura Ramas | Total Líneas | Cobertura Líneas | Total Métodos | Cobertura Métodos |
 |---|---|---|---|---|---|---|---|---|
-| `com.mx.cbtis.gestor.controller` | 571 | **100%** | 80 | **95%** (76/80) | 163 | **100%** (163/163) | 34 | **100%** (34/34) |
-| `com.mx.cbtis.gestor.modelo` | 320 | **100%** | - | n/a | 136 | **100%** (136/136) | 68 | **100%** (68/68) |
-| `com.mx.cbtis.gestor.dto` | 66 | **100%** | - | n/a | 28 | **100%** (28/28) | 14 | **100%** (14/14) |
-| **Total Global Backend** | **957** | **100%** (957/957) | **80** | **95%** (76/80) | **327** | **100%** (327/327) | **116** | **100%** (116/116) |
+| `com.mx.cbtis.gestor.controller` | 527 | **100%** (527/527) | 70 | **97.1%** (68/70) | 150 | **100%** (150/150) | 37 | **100%** (37/37) |
+| `com.mx.cbtis.gestor.modelo` | 320 | **100%** (320/320) | 0 | n/a | 136 | **100%** (136/136) | 68 | **100%** (68/68) |
+| `com.mx.cbtis.gestor.dto` | 66 | **100%** (66/66) | 0 | n/a | 28 | **100%** (28/28) | 14 | **100%** (14/14) |
+| **Total Global Backend** | **913** | **100%** (913/913) | **70** | **97.1%** (68/70) | **314** | **100%** (314/314) | **119** | **100%** (119/119) |
 
 ### Métricas Consolidadas:
 - **Pruebas Unitarias Backend:** 77 ejecutadas, 0 fallos, 0 errores.
 - **Pruebas Unitarias Frontend:** 34 ejecutadas, 0 fallos, 0 errores.
 - **Total Pruebas de Microservicios:** **111 pruebas automatizadas** en el repositorio.
-- **Cobertura de Métodos Evaluables:** **100%** en ambos microservicios.
-- **Cobertura de Líneas en Backend:** **100%** (0 líneas no cubiertas).
-- **Cobertura de Instrucciones en Backend:** **100%** (0 instrucciones omitidas).
+- **Cobertura de Métodos Evaluables:** **100%** (119/119 en backend, 34/34 en frontend).
+- **Cobertura de Líneas en Backend:** **100%** (314/314 líneas cubiertas, 0 líneas no cubiertas).
+- **Cobertura de Instrucciones en Backend:** **100%** (913/913 instrucciones cubiertas, 0 omitidas).
 - **Calidad de Base de Datos:** Linting con sqlfluff 100% superado en `db/validate.sql` contra MariaDB 11.3.
 
 ---
