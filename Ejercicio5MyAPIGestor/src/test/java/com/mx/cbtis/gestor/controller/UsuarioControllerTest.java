@@ -75,7 +75,7 @@ public class UsuarioControllerTest {
         String hash = encoder.encode("0722");
 
         UsuarioDTO loginReq = new UsuarioDTO();
-        loginReq.setCorreo_electronico("ana22533@cbtis75.edu.mx");
+        loginReq.setCorreoElectronico("ana22533@cbtis75.edu.mx");
         loginReq.setContrasena("0722");
 
         Usuario userFound = new Usuario(131, "Ana Paola Ramírez Vázquez", "ana22533@cbtis75.edu.mx", hash, "Estudiante", "#70FAB7");
@@ -93,7 +93,7 @@ public class UsuarioControllerTest {
     @DisplayName("UT-E04 POST /getUsuarioLogin credenciales incorrectas (usuario no existe) -> nombre 000")
     void testUtE04_loginIncorrectoUsuarioNoExiste() throws Exception {
         UsuarioDTO loginReq = new UsuarioDTO();
-        loginReq.setCorreo_electronico("noexiste@cbtis75.edu.mx");
+        loginReq.setCorreoElectronico("noexiste@cbtis75.edu.mx");
         loginReq.setContrasena("wrong");
 
         when(usuariotable.findByCorreoElectronico("noexiste@cbtis75.edu.mx")).thenReturn(Optional.empty());
@@ -112,7 +112,7 @@ public class UsuarioControllerTest {
         String hash = encoder.encode("passwordSeguro123");
 
         UsuarioDTO loginReq = new UsuarioDTO();
-        loginReq.setCorreo_electronico("ana22533@cbtis75.edu.mx");
+        loginReq.setCorreoElectronico("ana22533@cbtis75.edu.mx");
         loginReq.setContrasena("passwordErroneo");
 
         Usuario userFound = new Usuario(131, "Ana Paola Ramírez Vázquez", "ana22533@cbtis75.edu.mx", hash, "Estudiante", "#70FAB7");
@@ -228,7 +228,7 @@ public class UsuarioControllerTest {
         when(usuariotable.findByCorreoElectronico("ana@correo.com")).thenReturn(Optional.of(dbUser));
 
         UsuarioDTO req = new UsuarioDTO();
-        req.setCorreo_electronico("ana@correo.com");
+        req.setCorreoElectronico("ana@correo.com");
         req.setContrasena(null);
 
         Usuario res = usuarioController.getUsuarioLogin(req);
@@ -253,19 +253,19 @@ public class UsuarioControllerTest {
     @DisplayName("UT-E15 Cobertura getters/setters/constructores de UsuarioDTO")
     void testUtE15_coberturaUsuarioDTO() {
         UsuarioDTO dto = new UsuarioDTO();
-        dto.setId_usuario(10);
+        dto.setIdUsuario(10);
         dto.setNombre("Nombre");
-        dto.setCorreo_electronico("correo@test.com");
+        dto.setCorreoElectronico("correo@test.com");
         dto.setContrasena("pass");
         dto.setRol("Admin");
-        dto.setImagen_usuario("img.png");
+        dto.setImagenUsuario("img.png");
 
-        org.junit.jupiter.api.Assertions.assertEquals(10, dto.getId_usuario());
+        org.junit.jupiter.api.Assertions.assertEquals(10, dto.getIdUsuario());
         org.junit.jupiter.api.Assertions.assertEquals("Nombre", dto.getNombre());
-        org.junit.jupiter.api.Assertions.assertEquals("correo@test.com", dto.getCorreo_electronico());
+        org.junit.jupiter.api.Assertions.assertEquals("correo@test.com", dto.getCorreoElectronico());
         org.junit.jupiter.api.Assertions.assertEquals("pass", dto.getContrasena());
         org.junit.jupiter.api.Assertions.assertEquals("Admin", dto.getRol());
-        org.junit.jupiter.api.Assertions.assertEquals("img.png", dto.getImagen_usuario());
+        org.junit.jupiter.api.Assertions.assertEquals("img.png", dto.getImagenUsuario());
     }
 
     @Test

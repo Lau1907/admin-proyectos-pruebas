@@ -33,12 +33,12 @@ public class UsuarioController {
 			return null;
 		}
 		Usuario usuario = new Usuario();
-		usuario.setId_usuario(dto.getId_usuario());
+		usuario.setId_usuario(dto.getIdUsuario());
 		usuario.setNombre(dto.getNombre());
-		usuario.setCorreo_electronico(dto.getCorreo_electronico());
+		usuario.setCorreo_electronico(dto.getCorreoElectronico());
 		usuario.setContrasena(dto.getContrasena());
 		usuario.setRol(dto.getRol());
-		usuario.setImagen_usuario(dto.getImagen_usuario());
+		usuario.setImagen_usuario(dto.getImagenUsuario());
 		return usuario;
 	}
 	
@@ -74,11 +74,11 @@ public class UsuarioController {
 		Usuario fallback = new Usuario();
 		fallback.setNombre("000");
 
-		if (userParam == null || userParam.getCorreo_electronico() == null) {
+		if (userParam == null || userParam.getCorreoElectronico() == null) {
 			return fallback;
 		}
 		
-		Optional<Usuario> optionaluser = usuariotable.findByCorreoElectronico(userParam.getCorreo_electronico());
+		Optional<Usuario> optionaluser = usuariotable.findByCorreoElectronico(userParam.getCorreoElectronico());
 		if (optionaluser.isPresent()) {
 			Usuario dbUser = optionaluser.get();
 			if (verificarPassword(dbUser.getContrasena(), userParam.getContrasena())) {
