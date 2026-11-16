@@ -238,15 +238,29 @@ public class UsuarioControllerTest {
         org.junit.jupiter.api.Assertions.assertEquals("000", resNull.getNombre());
     }
 
+    private void assertGuardarRetornaUno(int id, String pass) {
+        UsuarioDTO dto = new UsuarioDTO(id, "Test" + id, "test" + id + "@test.com", pass, "User", "#FFF");
+        org.junit.jupiter.api.Assertions.assertEquals(1, usuarioController.addUsuario(dto));
+        org.junit.jupiter.api.Assertions.assertEquals(1, usuarioController.updateUsuario(dto));
+    }
+
+    private Usuario ejecutarLoginConMock(int id, String nombre, String correo, String passDb, String passReq) {
+        if (passDb != null) {
+            Usuario dbUser = new Usuario(id, nombre, correo, passDb, "User", "#000");
+            when(usuariotable.findByCorreoElectronico(correo)).thenReturn(Optional.of(dbUser));
+        } else {
+            Usuario dbUserNull = new Usuario(id, nombre, correo, null, "User", "#000");
+            when(usuariotable.findByCorreoElectronico(correo)).thenReturn(Optional.of(dbUserNull));
+        }
+        UsuarioDTO req = new UsuarioDTO(null, null, correo, passReq, null, null);
+        return usuarioController.getUsuarioLogin(req);
+    }
+
     @Test
     @DisplayName("UT-E14 addUsuario y updateUsuario con contraseña ya hasheada ($2a$) o vacía -> conserva contraseña")
     void testUtE14_passwordsHasheadasYVacias() {
-        String hashExistente = "$2a$10$wK1F5nOQzJ5p2lB/mF7kqu3kZ2i0xR3mYJ0.vL0C8y5m6dF3q5L8K";
-        UsuarioDTO dtoHasheado = new UsuarioDTO(1, "Test", "test@test.com", hashExistente, "User", "#FFF");
-        org.junit.jupiter.api.Assertions.assertEquals(1, usuarioController.addUsuario(dtoHasheado));
-
-        UsuarioDTO dtoPassNull = new UsuarioDTO(2, "Test2", "test2@test.com", null, "User", "#FFF");
-        org.junit.jupiter.api.Assertions.assertEquals(1, usuarioController.updateUsuario(dtoPassNull));
+        assertGuardarRetornaUno(1, "$2a$10$wK1F5nOQzJ5p2lB/mF7kqu3kZ2i0xR3mYJ0.vL0C8y5m6dF3q5L8K");
+        assertGuardarRetornaUno(2, null);
     }
 
     @Test
@@ -284,30 +298,20 @@ public class UsuarioControllerTest {
     @DisplayName("UT-E17 getUsuarioLogin con variantes de hash ($2b$, $2y$, texto plano coincidente y no coincidente, pass nulo en BD)")
     void testUtE17_loginVariantesPassword() {
         // 1. Password nula en base de datos
-        Usuario dbUserNullPass = new Usuario(1, "Ana", "nullpass@correo.com", null, "User", "#000");
-        when(usuariotable.findByCorreoElectronico("nullpass@correo.com")).thenReturn(Optional.of(dbUserNullPass));
-        UsuarioDTO reqNullPass = new UsuarioDTO(null, null, "nullpass@correo.com", "cualquiera", null, null);
-        org.junit.jupiter.api.Assertions.assertEquals("000", usuarioController.getUsuarioLogin(reqNullPass).getNombre());
+        org.junit.jupiter.api.Assertions.assertEquals("000",
+                ejecutarLoginConMock(1, "Ana", "nullpass@correo.com", null, "cualquiera").getNombre());
 
         // 2. Hash $2b$
-        Usuario dbUser2b = new Usuario(2, "Luis", "luis@correo.com", "$2b$10$wK1F5nOQzJ5p2lB/mF7kqu3kZ2i0xR3mYJ0.vL0C8y5m6dF3q5L8K", "User", "#000");
-        when(usuariotable.findByCorreoElectronico("luis@correo.com")).thenReturn(Optional.of(dbUser2b));
-        UsuarioDTO req2b = new UsuarioDTO(null, null, "luis@correo.com", "0722", null, null);
-        Usuario res2b = usuarioController.getUsuarioLogin(req2b);
-        org.junit.jupiter.api.Assertions.assertNotNull(res2b);
+        org.junit.jupiter.api.Assertions.assertNotNull(
+                ejecutarLoginConMock(2, "Luis", "luis@correo.com", "$2b$10$wK1F5nOQzJ5p2lB/mF7kqu3kZ2i0xR3mYJ0.vL0C8y5m6dF3q5L8K", "0722"));
 
         // 3. Hash $2y$
-        Usuario dbUser2y = new Usuario(3, "Maria", "maria@correo.com", "$2y$10$wK1F5nOQzJ5p2lB/mF7kqu3kZ2i0xR3mYJ0.vL0C8y5m6dF3q5L8K", "User", "#000");
-        when(usuariotable.findByCorreoElectronico("maria@correo.com")).thenReturn(Optional.of(dbUser2y));
-        UsuarioDTO req2y = new UsuarioDTO(null, null, "maria@correo.com", "0722", null, null);
-        Usuario res2y = usuarioController.getUsuarioLogin(req2y);
-        org.junit.jupiter.api.Assertions.assertNotNull(res2y);
+        org.junit.jupiter.api.Assertions.assertNotNull(
+                ejecutarLoginConMock(3, "Maria", "maria@correo.com", "$2y$10$wK1F5nOQzJ5p2lB/mF7kqu3kZ2i0xR3mYJ0.vL0C8y5m6dF3q5L8K", "0722"));
 
         // 4. Texto plano coincidente
-        Usuario dbUserPlano = new Usuario(4, "Pedro", "pedro@correo.com", "plana123", "User", "#000");
-        when(usuariotable.findByCorreoElectronico("pedro@correo.com")).thenReturn(Optional.of(dbUserPlano));
-        UsuarioDTO reqPlano = new UsuarioDTO(null, null, "pedro@correo.com", "plana123", null, null);
-        org.junit.jupiter.api.Assertions.assertEquals("Pedro", usuarioController.getUsuarioLogin(reqPlano).getNombre());
+        org.junit.jupiter.api.Assertions.assertEquals("Pedro",
+                ejecutarLoginConMock(4, "Pedro", "pedro@correo.com", "plana123", "plana123").getNombre());
 
         // 5. Texto plano no coincidente
         UsuarioDTO reqPlanoErr = new UsuarioDTO(null, null, "pedro@correo.com", "incorrecta", null, null);
@@ -317,13 +321,7 @@ public class UsuarioControllerTest {
     @Test
     @DisplayName("UT-E18 addUsuario y updateUsuario con hash $2b$ y con contraseñas vacías")
     void testUtE18_addYUpdateConHash2bYContrasenaVacia() {
-        String hash2b = "$2b$10$wK1F5nOQzJ5p2lB/mF7kqu3kZ2i0xR3mYJ0.vL0C8y5m6dF3q5L8K";
-        UsuarioDTO dto2b = new UsuarioDTO(6, "Test 2b", "test2b@test.com", hash2b, "User", "#FFF");
-        org.junit.jupiter.api.Assertions.assertEquals(1, usuarioController.addUsuario(dto2b));
-        org.junit.jupiter.api.Assertions.assertEquals(1, usuarioController.updateUsuario(dto2b));
-
-        UsuarioDTO dtoVacio = new UsuarioDTO(7, "Test Vacio", "vacio@test.com", "", "User", "#FFF");
-        org.junit.jupiter.api.Assertions.assertEquals(1, usuarioController.addUsuario(dtoVacio));
-        org.junit.jupiter.api.Assertions.assertEquals(1, usuarioController.updateUsuario(dtoVacio));
+        assertGuardarRetornaUno(6, "$2b$10$wK1F5nOQzJ5p2lB/mF7kqu3kZ2i0xR3mYJ0.vL0C8y5m6dF3q5L8K");
+        assertGuardarRetornaUno(7, "");
     }
 }

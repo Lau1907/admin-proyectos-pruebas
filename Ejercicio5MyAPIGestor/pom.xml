@@ -21,6 +21,8 @@
 		<argLine></argLine>
 		<!-- Excluir carpetas target pero NO excluir el codigo fuente src/ -->
 		<sonar.exclusions>**/target/**</sonar.exclusions>
+		<!-- Excluir codigo de pruebas de la deteccion de duplicacion (CPD) para evitar falsos positivos en aserciones y fixtures de test sin excluir src/main -->
+		<sonar.cpd.exclusions>**/src/test/**</sonar.cpd.exclusions>
 		<sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 	</properties>
 	<dependencies>
