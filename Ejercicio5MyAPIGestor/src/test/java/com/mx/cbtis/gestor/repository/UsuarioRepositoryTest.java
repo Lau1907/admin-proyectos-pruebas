@@ -72,6 +72,25 @@ public class UsuarioRepositoryTest {
     }
 
     @Test
+    @DisplayName("UT-05b findByCorreoElectronico existente")
+    void testUt05b_findByCorreoElectronicoExistente() {
+        Usuario usuario = new Usuario(null, "Perla Joceline Martínez Meza", "perla22522@cbtis75.edu.mx", "$2a$10$hashedpass", "Estudiante", "#805611");
+        entityManager.persistAndFlush(usuario);
+        entityManager.clear();
+
+        Optional<Usuario> encontrado = usuarioRepository.findByCorreoElectronico("perla22522@cbtis75.edu.mx");
+        assertThat(encontrado).isPresent();
+        assertThat(encontrado.get().getCorreo_electronico()).isEqualTo("perla22522@cbtis75.edu.mx");
+    }
+
+    @Test
+    @DisplayName("UT-05c findByCorreoElectronico inexistente -> vacío")
+    void testUt05c_findByCorreoElectronicoInexistente() {
+        Optional<Usuario> encontrado = usuarioRepository.findByCorreoElectronico("noexiste@cbtis75.edu.mx");
+        assertThat(encontrado).isEmpty();
+    }
+
+    @Test
     @DisplayName("UT-06 actualizar nombre persiste")
     void testUt06_actualizarNombrePersiste() {
         Usuario usuario = new Usuario(null, "Nombre Original", "original@cbtis75.edu.mx", "123", "Estudiante", "#000000");

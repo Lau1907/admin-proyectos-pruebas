@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,8 +17,11 @@ import com.mx.cbtis.gestor.repository.ProtectosRepository;
 @RestController
 public class ProyectosController {
 	
-	@Autowired 
-	ProtectosRepository proyectostable;
+	private final ProtectosRepository proyectostable;
+
+	public ProyectosController(ProtectosRepository proyectostable) {
+		this.proyectostable = proyectostable;
+	}
 	
 	/*@PostMapping("/buscarProyecto")
 	public Proyectos getProyecto(@RequestBody Proyectos proyecto) {

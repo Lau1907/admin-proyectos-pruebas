@@ -19,6 +19,11 @@
 		<byte-buddy.version>1.14.12</byte-buddy.version>
 		<!-- valor por defecto para que @{argLine} de surefire siempre exista -->
 		<argLine></argLine>
+		<!-- Excluir carpetas target pero NO excluir el codigo fuente src/ -->
+		<sonar.exclusions>**/target/**</sonar.exclusions>
+		<!-- Excluir codigo de pruebas de la deteccion de duplicacion (CPD) para evitar falsos positivos en aserciones y fixtures de test sin excluir src/main -->
+		<sonar.cpd.exclusions>**/src/test/**</sonar.cpd.exclusions>
+		<sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -28,6 +33,11 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-crypto</artifactId>
 		</dependency>
 
 		<dependency>
@@ -61,6 +71,12 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.12</version>
+				<configuration>
+					<!-- Excluye SOLO la clase main ya que unicamente arranca Spring Boot con SpringApplication.run() y no contiene logica evaluable -->
+					<excludes>
+						<exclude>com/mx/cbtis/gestor/Ejercicio5MyApiGestorApplication.*</exclude>
+					</excludes>
+				</configuration>
 				<executions>
 					<execution>
 						<id>prepare-agent</id>
@@ -70,7 +86,7 @@
 					</execution>
 					<execution>
 						<id>report</id>
-						<phase>test</phase>
+						<phase>verify</phase>
 						<goals>
 							<goal>report</goal>
 						</goals>
@@ -82,8 +98,8 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.2.5</version>
 				<configuration>
-					<!-- @{argLine} conserva el agente de JaCoCo; EnableDynamicAgentLoading evita el aviso de Mockito en JDK 21 -->
-					<argLine>@{argLine} -XX:+EnableDynamicAgentLoading</argLine>
+					<!-- @{argLine} conserva el agente de JaCoCo; EnableDynamicAgentLoading evita el aviso de Mockito en JDK 21; SerialGC con 128m optimiza memoria virtual en Windows -->
+					<argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Xmx128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1</argLine>
 					<includes>
 						<include>**/*Test.java</include>
 						<include>**/*Tests.java</include>

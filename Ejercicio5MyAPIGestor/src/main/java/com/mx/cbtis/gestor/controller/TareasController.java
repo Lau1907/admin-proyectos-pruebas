@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,8 +18,11 @@ import com.mx.cbtis.gestor.repository.TareasRepository;
 @RestController
 public class TareasController {
 	
-	@Autowired
-	TareasRepository tareastable;
+	private final TareasRepository tareastable;
+
+	public TareasController(TareasRepository tareastable) {
+		this.tareastable = tareastable;
+	}
 	
 	@PostMapping("/getTarea")
 	public List<Tareas> getTarea(@RequestBody Tareas id_proyecto) {

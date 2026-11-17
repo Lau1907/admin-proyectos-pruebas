@@ -1,0 +1,185 @@
+// =============================================================================
+// CI/CD Pipeline Declarativo para Base de Datos y Calidad Integral
+// Archivo: ci/Jenkinsfile.database
+// Propósito: Análisis estático SQL (sqlfluff vía Docker), Base MariaDB 11.3 efímera
+//            en Docker para auditoría/validación de esquema y datos (db/validate.sql),
+//            pruebas backend con H2 en memoria y análisis SonarQube & Quality Gate.
+// Compatible con agentes Windows (bat) y Linux/Unix (sh)
+// =============================================================================
+
+// Helper para compatibilidad multiplataforma entre Linux (sh) y Windows (bat)
+def ejecutar(String cmd) {
+    if (isUnix()) {
+        sh cmd
+    } else {
+        bat cmd
+    }
+}
+
+// NOTA IMPORTANTE 1 - GLOBAL TOOL CONFIGURATION:
+// Los identificadores 'JDK21' y 'Maven3' en la directiva 'tools' DEBEN COINCIDIR
+// exactamente con las herramientas configuradas en:
+// "Administrar Jenkins" -> "Tools" -> JDK installations / Maven installations.
+
+// NOTA IMPORTANTE 2 - ANÁLISIS DE SQLFLUFF VÍA DOCKER:
+// El linting de dialecto SQL MariaDB se ejecuta directamente mediante la imagen
+// oficial Docker 'sqlfluff/sqlfluff:latest'.
+
+pipeline {
+    agent any
+
+    tools {
+        jdk 'JDK21'
+        maven 'Maven3'
+    }
+
+    environment {
+        // Identificador único para evitar colisiones entre builds concurrentes
+        MARIADB_CONTAINER = "mariadb-gestor-ci-${BUILD_NUMBER}"
+        DB_NAME = "dbgestor"
+        DB_USER = "root"
+        DB_PASS = "ci_secure_password_2026"
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '15'))
+        disableConcurrentBuilds()
+        timeout(time: 30, unit: 'MINUTES')
+        timestamps()
+    }
+
+    stages {
+        stage('1. Análisis Estático SQL (sqlfluff)') {
+            steps {
+                echo '=== Ejecutando Linting y Auditoría Estática de SQL con sqlfluff (dialecto MariaDB vía Docker) ==='
+                script {
+                    def mountDir = isUnix() ? '$(pwd)' : '%CD%'
+                    def dockerDisponible = false
+
+                    try {
+                        ejecutar('docker info')
+                        dockerDisponible = true
+                    } catch (Exception e) {
+                        echo "Aviso: Docker no está disponible o el motor no responde (${e.message}). Omitiendo análisis con sqlfluff y continuando pipeline."
+                    }
+
+                    if (dockerDisponible) {
+                        // El lint no debe tumbar el pipeline por advertencias de estilo
+                        catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                            ejecutar("docker run --rm -v \"${mountDir}:/sql\" sqlfluff/sqlfluff:latest lint /sql/db/validate.sql --dialect mariadb > sqlfluff-report.txt")
+                        }
+                        archiveArtifacts artifacts: 'sqlfluff-report.txt', allowEmptyArchive: true
+                    }
+                }
+            }
+        }
+
+        stage('2. Desplegar MariaDB 11.3 Efímera en Docker') {
+            steps {
+                echo '=== Levantando contenedor MariaDB 11.3 efímero (sin exponer puertos al host) ==='
+                // No se publica ningún puerto al host (-p) para evitar conflictos locales;
+                // todas las operaciones se realizan aisladas mediante docker exec.
+                ejecutar("docker run -d --name ${MARIADB_CONTAINER} -e MYSQL_ROOT_PASSWORD=${DB_PASS} -e MYSQL_DATABASE=${DB_NAME} mariadb:11.3")
+
+                echo '=== Esperando disponibilidad del motor MariaDB y autenticación (Health Check con SELECT 1) ==='
+                script {
+                    // Consulta autenticada real sobre la BD dbgestor; fallará hasta que el servidor final
+                    // haya completado la inicialización y aplicado las contraseñas reales.
+                    retry(30) {
+                        sleep(3)
+                        echo 'Comprobando autenticación y disponibilidad de MariaDB...'
+                        ejecutar("docker exec ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} -e \"SELECT 1\" ${DB_NAME}")
+                    }
+
+                    // Verificación extra antes de proceder a la carga del dump
+                    echo "=== Verificación extra: comprobando acceso a la base de datos ${DB_NAME} ==="
+                    ejecutar("docker exec ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} -e \"SHOW TABLES\" ${DB_NAME}")
+                    echo " MariaDB 11.3 está LISTA y autenticando correctamente sobre ${DB_NAME}."
+                }
+            }
+        }
+
+        stage('3. Cargar Esquema y Ejecutar Validaciones SQL') {
+            steps {
+                echo '=== Restaurando dump-dbgestor-202406261453.sql en la base de datos efímera ==='
+                ejecutar("docker exec -i ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} ${DB_NAME} < dump-dbgestor-202406261453.sql")
+
+                echo '=== Ejecutando db/validate.sql para auditoría de integridad y seguridad ==='
+                script {
+                    def validateSql = isUnix() ? 'db/validate.sql' : 'db\\validate.sql'
+                    ejecutar("docker exec -i ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} -t ${DB_NAME} < ${validateSql} > validaciones_resultado.txt")
+                }
+
+                echo '=== Archivando reporte de validaciones de base de datos ==='
+                archiveArtifacts artifacts: 'validaciones_resultado.txt', fingerprint: true
+
+                echo '=== Aplicando script de migración de contraseñas seguras BCrypt ==='
+                script {
+                    def migraSql = isUnix() ? 'db/migracion_hash_passwords.sql' : 'db\\migracion_hash_passwords.sql'
+                    def validateSql = isUnix() ? 'db/validate.sql' : 'db\\validate.sql'
+                    ejecutar("docker exec -i ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} ${DB_NAME} < ${migraSql}")
+                    echo 'Post-migración: Re-ejecutando validación de contraseñas...'
+                    ejecutar("docker exec -i ${MARIADB_CONTAINER} mariadb -u${DB_USER} -p${DB_PASS} -t ${DB_NAME} < ${validateSql} > validaciones_post_migracion.txt")
+                }
+                archiveArtifacts artifacts: 'validaciones_post_migracion.txt', fingerprint: true
+            }
+        }
+
+        stage('4. Pruebas Backend (H2 en memoria)') {
+            steps {
+                dir('Ejercicio5MyAPIGestor') {
+                    // NOTA: Las pruebas unitarias y de contexto del backend utilizan base de datos
+                    // H2 en memoria (configurada en src/test/resources/application.properties),
+                    // garantizando aislamiento hermético y rapidez sin depender del contenedor MariaDB.
+                    echo '=== Ejecutando mvn verify en backend utilizando H2 en memoria (perfil de test) ==='
+                    ejecutar('mvn -B verify')
+                    junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: false
+                    archiveArtifacts artifacts: 'target/site/jacoco/**', allowEmptyArchive: true
+                }
+            }
+        }
+
+        stage('5. Análisis SonarQube & Quality Gate') {
+            steps {
+                dir('Ejercicio5MyAPIGestor') {
+                    echo '=== Enviando análisis de código y cobertura JaCoCo a SonarQube ==='
+                    // NOTA: 'SonarQube' debe coincidir con el nombre configurado en Jenkins -> "Configure System" -> SonarQube servers
+                    withSonarQubeEnv('SonarQube') {
+                        ejecutar('mvn -B sonar:sonar -Dsonar.exclusions=**/target/**')
+                    }
+                }
+
+                echo '=== Verificando SonarQube Quality Gate ==='
+                timeout(time: 5, unit: 'MINUTES') {
+                    script {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "❌ Quality Gate de SonarQube NO cumplido. Estado actual: ${qg.status}"
+                        } else {
+                            echo " Quality Gate de SonarQube aprobado exitosamente."
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "=== Limpieza: deteniendo y eliminando contenedor efímero ${MARIADB_CONTAINER} ==="
+            script {
+                try {
+                    ejecutar("docker rm -f ${MARIADB_CONTAINER}")
+                } catch (Exception e) {
+                    echo "Aviso: No se pudo eliminar el contenedor ${MARIADB_CONTAINER} o ya no existía: ${e.message}"
+                }
+            }
+        }
+        success {
+            echo ' Pipeline Integral de Base de Datos y Calidad finalizado con ÉXITO.'
+        }
+        failure {
+            echo '❌ Pipeline Integral de Base de Datos y Calidad falló en alguna etapa crítica.'
+        }
+    }
+}
