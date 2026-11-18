@@ -55,66 +55,66 @@ public class GestorController {
 	public RestTemplate getTemplate() {
 		return this.template;
 	}
-	
+
 	@GetMapping("/")
 	public String getHome() {
 		return "home";
 	}
-	
+
 	@GetMapping("/tutorial")
 	public String getTutorial() {
 		return "tutorial";
 	}
-	
+
 	@GetMapping("/manual")
 	public String getManual() {
 		return "manual";
 	}
-	
+
 	@GetMapping("/login")
 	public String getLogin() {
 		return "login";
 	}
-	
+
 	@GetMapping("/register")
 	public String getRegister(Model modelo) {
-		
+
 		Usuario usuario = new Usuario();
 		modelo.addAttribute("usuario", usuario);
-		
+
 		return "register";
 	}
-	
+
 	@PostMapping("/saveUsuario")
 	public ModelAndView setSaveUsuario(@ModelAttribute Usuario usuario) {
-                   
-    	String urlservicebd = apiBaseUrl + "/addUsuario";
-    	ResponseEntity<Integer> response = template.postForEntity(urlservicebd, usuario, Integer.class);
 
-    	return new ModelAndView("redirect:/login");
+		String urlservicebd = apiBaseUrl + "/addUsuario";
+		ResponseEntity<Integer> response = template.postForEntity(urlservicebd, usuario, Integer.class);
+
+		return new ModelAndView("redirect:/login");
 	}
-	
+
 	@GetMapping("/inicio")
 	public String getInicio(Model modelo) {
-		
+
 		Proyectos proyectos = new Proyectos();
 		modelo.addAttribute("proyectos", proyectos);
-		
+
 		return "inicio";
 	}
-	
+
 	@PostMapping("/saveProyecto")
 	public ModelAndView setSaveProyecto(@ModelAttribute Proyectos proyecto) {
 
-    	String urlservicebd = apiBaseUrl + "/addProyecto";
-    	ResponseEntity<Integer> response = template.postForEntity(urlservicebd, proyecto, Integer.class);
+		String urlservicebd = apiBaseUrl + "/addProyecto";
+		ResponseEntity<Integer> response = template.postForEntity(urlservicebd, proyecto, Integer.class);
 
-    	return new ModelAndView("redirect:/inicio");
+		return new ModelAndView("redirect:/inicio");
 	}
-	
+
 	@PostMapping("/consultarProyectos")
 	public ResponseEntity<Object> consultarProyectos(Model modelo) {
-		
+
 		String urlservicebd = apiBaseUrl + "/buscarProyectos";
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -123,47 +123,46 @@ public class GestorController {
 		if (modelo != null) {
 			modelo.addAttribute("listaProyectos", proyectos);
 		}
-		
+
 		ResponseEntity<Object> objeto = new ResponseEntity<Object>(proyectos, HttpStatusCode.valueOf(200));
-	
+
 		return objeto;
 	}
-	
+
 	@PostMapping("/eliminarProyecto")
 	public ModelAndView eliminarProyecto(@RequestBody Proyectos proyecto) {
 		System.out.println("El id del proyecto es: " + (proyecto != null ? proyecto.getId_proyecto() : "null"));
 		String urlservicebd = apiBaseUrl + "/deleteProyecto";
-		HttpEntity<Proyectos> request = new HttpEntity<Proyectos>(proyecto); 
+		HttpEntity<Proyectos> request = new HttpEntity<Proyectos>(proyecto);
 		ResponseEntity<Integer> response = template.exchange(urlservicebd, HttpMethod.DELETE, request, Integer.class);
-	
+
 		return new ModelAndView("redirect:/inicio");
 	}
-	
+
 	@PostMapping("/actualizarProyecto")
 	public ResponseEntity<Object> updateProyecto(@RequestBody Proyectos proyecto) {
-		Map<String,Integer> params = new HashMap<String,Integer>();
+		Map<String, Integer> params = new HashMap<String, Integer>();
 		if (proyecto != null) {
 			params.put("id_proyecto", proyecto.getId_proyecto());
 		}
 		String urlservicebd = apiBaseUrl + "/buscarProyecto?id_proyecto={id_proyecto}";
 		Proyectos proyectos = template.getForObject(urlservicebd, Proyectos.class, params);
-		
+
 		ResponseEntity<Object> objeto = new ResponseEntity<Object>(proyectos, HttpStatusCode.valueOf(200));
-		
+
 		return objeto;
 	}
-	
+
 	@PostMapping("/verificarLogin")
 	public ResponseEntity<Usuario> verificarUsuario(@RequestBody Usuario paramUser) {
 		String urlservicebd = apiBaseUrl + "/getUsuarioLogin";
 		ResponseEntity<Usuario> response = template.postForEntity(urlservicebd, paramUser, Usuario.class);
-		
-		return response;
+		return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
 	}
-	
+
 	@PostMapping("/consultarUsuarios")
 	public ResponseEntity<Object> consultarUsuarios(Model modelo) {
-		
+
 		String urlservicebd = apiBaseUrl + "/buscarUsuarios";
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -172,58 +171,58 @@ public class GestorController {
 		if (modelo != null) {
 			modelo.addAttribute("listaUsuarios", usuarios);
 		}
-		
+
 		ResponseEntity<Object> objeto = new ResponseEntity<Object>(usuarios, HttpStatusCode.valueOf(200));
-	
+
 		return objeto;
 	}
-	
+
 	@PostMapping("/obtenerTareas")
 	public ResponseEntity<List<Tareas>> obtenerTareas(@RequestBody Tareas idProyecto, Model modelo) {
-	    String urlservicebd = apiBaseUrl + "/getTarea";
-	    HttpHeaders headers = new HttpHeaders();
-	    headers.setContentType(MediaType.APPLICATION_JSON);
-	    Tareas[] response = template.postForObject(urlservicebd, idProyecto, Tareas[].class);
-	    List<Tareas> listaTareas = (response != null) ? Arrays.asList(response) : Collections.emptyList();
-	    if (modelo != null) {
-	    	modelo.addAttribute("tareas", listaTareas);
-	    }
-	    return ResponseEntity.ok(listaTareas);
+		String urlservicebd = apiBaseUrl + "/getTarea";
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		Tareas[] response = template.postForObject(urlservicebd, idProyecto, Tareas[].class);
+		List<Tareas> listaTareas = (response != null) ? Arrays.asList(response) : Collections.emptyList();
+		if (modelo != null) {
+			modelo.addAttribute("tareas", listaTareas);
+		}
+		return ResponseEntity.ok(listaTareas);
 	}
-	
+
 	@PostMapping("/obtenerComentarios")
 	public ResponseEntity<List<Comentarios>> obtenerComentarios(@RequestBody Comentarios idComentario, Model modelo) {
-	    String urlservicebd = apiBaseUrl + "/getComentario";
-	    HttpHeaders headers = new HttpHeaders();
-	    headers.setContentType(MediaType.APPLICATION_JSON);
-	    Comentarios[] response = template.postForObject(urlservicebd, idComentario, Comentarios[].class);
-	    List<Comentarios> listaComentarios = (response != null) ? Arrays.asList(response) : Collections.emptyList();
-	    if (modelo != null) {
-	    	modelo.addAttribute("comentarios", listaComentarios);
-	    }
-	    return ResponseEntity.ok(listaComentarios);
+		String urlservicebd = apiBaseUrl + "/getComentario";
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		Comentarios[] response = template.postForObject(urlservicebd, idComentario, Comentarios[].class);
+		List<Comentarios> listaComentarios = (response != null) ? Arrays.asList(response) : Collections.emptyList();
+		if (modelo != null) {
+			modelo.addAttribute("comentarios", listaComentarios);
+		}
+		return ResponseEntity.ok(listaComentarios);
 	}
-	
-	//Liliana
+
+	// Liliana
 	@GetMapping("/proyecto")
 	public String getProyecto(Model modelo) {
 		Tareas tarea = new Tareas();
 		modelo.addAttribute("tarea", tarea);
-		
+
 		Comentarios comentario = new Comentarios();
 		modelo.addAttribute("comentarios", comentario);
-		
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		
+
 		String urlservicebdUsuario = apiBaseUrl + "/buscarUsuarios";
-		Usuario[] responseUsuario = template.postForObject(urlservicebdUsuario, headers, Usuario[].class);  
+		Usuario[] responseUsuario = template.postForObject(urlservicebdUsuario, headers, Usuario[].class);
 		List<Usuario> usuarios = (responseUsuario != null) ? Arrays.asList(responseUsuario) : Collections.emptyList();
 		modelo.addAttribute("listaUsuarios", usuarios);
-		
+
 		return "proyecto";
 	}
-	
+
 	@GetMapping("/tarea")
 	public String getTarea(Model modelo) {
 
@@ -231,91 +230,91 @@ public class GestorController {
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		Tareas tareas = new Tareas();
 		modelo.addAttribute("tareas", tareas);
-		
+
 		return "proyecto";
 	}
-	
+
 	@PostMapping("/saveTarea")
 	public ModelAndView setSaveTareas(@ModelAttribute Tareas tareas) {
-		
+
 		String urlservicebd = apiBaseUrl + "/addTareas";
 		ResponseEntity<Integer> response = template.postForEntity(urlservicebd, tareas, Integer.class);
 		ModelAndView mav = new ModelAndView("redirect:/proyecto");
 		if (tareas != null) {
 			mav.addObject("id_proyecto", tareas.getId_proyecto());
 		}
-		
+
 		return mav;
 	}
 
 	@PostMapping("/saveComentario")
 	public String setSaveComentario(@RequestBody Comentarios comentarios) {
-		
+
 		String urlservicebd = apiBaseUrl + "/addComentario";
-		ResponseEntity<Integer> response = template.postForEntity(urlservicebd, comentarios, Integer.class); 
-		
+		ResponseEntity<Integer> response = template.postForEntity(urlservicebd, comentarios, Integer.class);
+
 		return "proyecto";
 	}
-	
+
 	@PostMapping("/actualizarTarea")
 	public ResponseEntity<Object> updateTarea(@RequestBody Tareas tarea) {
-		Map<String,Integer> params = new HashMap<String,Integer>();
+		Map<String, Integer> params = new HashMap<String, Integer>();
 		if (tarea != null) {
 			params.put("id_tarea", tarea.getId_tarea());
 		}
 		String urlservicebd = apiBaseUrl + "/buscarTarea?id_tarea={id_tarea}";
 		Tareas tareas = template.getForObject(urlservicebd, Tareas.class, params);
-		
+
 		ResponseEntity<Object> objeto = new ResponseEntity<Object>(tareas, HttpStatusCode.valueOf(200));
-		
+
 		return objeto;
 	}
-	
+
 	@PostMapping("/eliminarTarea")
 	public ModelAndView eliminarTarea(@RequestBody Tareas tareas) {
 		System.out.println("El id de la tarea es: " + (tareas != null ? tareas.getId_tarea() : "null"));
 		String urlservicebd = apiBaseUrl + "/deleteTareas";
 		HttpEntity<Tareas> request = new HttpEntity<Tareas>(tareas);
 		ResponseEntity<Integer> response = template.exchange(urlservicebd, HttpMethod.DELETE, request, Integer.class);
-		
+
 		return new ModelAndView("redirect:/proyecto");
 	}
-	
+
 	@PostMapping("/verificarTarea")
-	public ResponseEntity<Integer> verificarTarea(@RequestBody Tareas paramName){
+	public ResponseEntity<Integer> verificarTarea(@RequestBody Tareas paramName) {
 		String urlservicebd = apiBaseUrl + "/addTareas";
 		ResponseEntity<Integer> response = template.postForEntity(urlservicebd, paramName, Integer.class);
 		return response;
 	}
-	
+
 	@PostMapping("/cambiosTareas")
-	public ResponseEntity<Integer> cambiosTareas(@RequestBody Tareas paramDatos){
+	public ResponseEntity<Integer> cambiosTareas(@RequestBody Tareas paramDatos) {
 		String urlservicebd = apiBaseUrl + "/addTareas";
 		ResponseEntity<Integer> response = template.postForEntity(urlservicebd, paramDatos, Integer.class);
 		return response;
 	}
-	
+
 	@PostMapping("/consultarTareas")
-	public ResponseEntity<Object> consultarTareas() {	
+	public ResponseEntity<Object> consultarTareas() {
 		String urlservicebd = apiBaseUrl + "/buscarTareas";
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		Tareas[] response = template.postForObject(urlservicebd, headers, Tareas[].class);
 		List<Tareas> tareas = (response != null) ? Arrays.asList(response) : Collections.emptyList();
 		ResponseEntity<Object> objeto = new ResponseEntity<Object>(tareas, HttpStatusCode.valueOf(200));
-		
+
 		return objeto;
 	}
-	
+
 	@PostMapping("/consultarComentarios")
-	public ResponseEntity<Object> consultarComentarios() {	
+	public ResponseEntity<Object> consultarComentarios() {
 		String urlservicebd = apiBaseUrl + "/buscarComentarios";
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		Comentarios[] response = template.postForObject(urlservicebd, headers, Comentarios[].class);
 		List<Comentarios> comentarios = (response != null) ? Arrays.asList(response) : Collections.emptyList();
 		ResponseEntity<Object> objeto = new ResponseEntity<Object>(comentarios, HttpStatusCode.valueOf(200));
-		
+
 		return objeto;
 	}
 }
